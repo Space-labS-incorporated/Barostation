@@ -1,25 +1,4 @@
 ﻿Entries:
-- author: Pgriha
-  changes:
-  - message: Cotton seeds added to seeds crate from Cargo.
-    type: Add
-  id: 9125
-  time: '2025-10-19T16:02:52.0000000+00:00'
-  url: https://github.com/space-wizards/space-station-14/pull/40970
-- author: SpaceLizard24
-  changes:
-  - message: Creating crystal chemical reaction now can produce yellow and black crystals!
-    type: Fix
-  id: 9126
-  time: '2025-10-19T18:37:46.0000000+00:00'
-  url: https://github.com/space-wizards/space-station-14/pull/40985
-- author: Kittygyat
-  changes:
-  - message: Monkeys, Kobolds & Scurrets can now shove/disarm like regular species!
-    type: Tweak
-  id: 9127
-  time: '2025-10-19T19:09:04.0000000+00:00'
-  url: https://github.com/space-wizards/space-station-14/pull/38542
 - author: PotentiallyTom
   changes:
   - message: AI Law boards now have a link to the lawsets guide page
@@ -4031,3 +4010,24 @@
   id: 9636
   time: '2026-04-11T19:05:06.0000000+00:00'
   url: https://github.com/space-wizards/space-station-14/pull/43547
+- author: BeatusCrow
+  changes:
+  - message: NPCs no longer detect invisible targets.
+    type: Add
+  id: 9637
+  time: '2026-04-11T21:20:35.0000000+00:00'
+  url: https://github.com/space-wizards/space-station-14/pull/43562
+- author: AndrewFenriz
+  changes:
+  - message: Fixed Cutter Machine rotation to be consistent with other lathes.
+    type: Fix
+  id: 9638
+  time: '2026-04-11T21:35:47.0000000+00:00'
+  url: https://github.com/space-wizards/space-station-14/pull/43494
+- author: Princess-Cheeseballs
+  changes:
+  - message: Paradox clones will no longer be slow when spawning.
+    type: Fix
+  id: 9639
+  time: '2026-04-12T19:15:04.0000000+00:00'
+  url: https://github.com/space-wizards/space-station-14/pull/43528
