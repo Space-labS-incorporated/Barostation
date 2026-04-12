@@ -233,8 +233,6 @@
         - ReagentId: Radium
           Quantity: 2
         canReact: false
-  - type: RadiationSource # BaroStation
-    intensity: 0.04 # BaroStation
 
 - type: entity
   parent: SheetUranium
