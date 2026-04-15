@@ -10,9 +10,13 @@ public abstract class SharedNuclearReactorSystem : EntitySystem
         SubscribeLocalEvent<NuclearReactorComponent, NuclearReactorToggleMessage>(OnToggleMessageWrap);
         SubscribeLocalEvent<NuclearReactorComponent, NuclearReactorSetTemperatureMessage>(OnSetTemperatureMessageWrap);
         SubscribeLocalEvent<NuclearReactorComponent, NuclearReactorEjectMessage>(OnEjectMessageWrap);
+        SubscribeLocalEvent<NuclearReactorComponent, NuclearReactorSetCoolingMessage>(OnSetCoolingMessageWrap); // ДОБАВИТЬ
         SubscribeLocalEvent<NuclearReactorComponent, BoundUIOpenedEvent>(OnUIOpen);
     }
+    private void OnSetCoolingMessageWrap(EntityUid uid, NuclearReactorComponent comp, NuclearReactorSetCoolingMessage args)
+    => OnSetCoolingMessage(uid, comp, args);
 
+    protected virtual void OnSetCoolingMessage(EntityUid uid, NuclearReactorComponent comp, NuclearReactorSetCoolingMessage args) { }
     private void OnToggleMessageWrap(EntityUid uid, NuclearReactorComponent comp, NuclearReactorToggleMessage args)
         => OnToggleMessage(uid, comp, args);
 

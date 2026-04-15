@@ -2,19 +2,19 @@ using Robust.Shared.GameStates;
 
 namespace Content.Shared._BaroStation.NuclearReactor;
 
-[NetworkedComponent, RegisterComponent]
+[NetworkedComponent, RegisterComponent, AutoGenerateComponentState]
 public sealed partial class UraniumRodComponent : Component
 {
     /// <summary>
     /// Оставшееся топливо (в секундах работы на оптимальной температуре).
     /// </summary>
-    [DataField("fuel"), ViewVariables(VVAccess.ReadWrite)]
-    public float Fuel = 600f; // 10 минут
+    [DataField("fuel"), AutoNetworkedField]
+    public float Fuel = 600f;
 
     /// <summary>
     /// Начальный запас топлива.
     /// </summary>
-    [DataField("maxFuel")]
+    [DataField("maxFuel"), AutoNetworkedField]
     public float MaxFuel = 600f;
 
     /// <summary>

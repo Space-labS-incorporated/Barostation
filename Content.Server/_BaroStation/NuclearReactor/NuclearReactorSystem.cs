@@ -27,14 +27,13 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
     public override void Initialize()
     {
         base.Initialize();
-        Logger.Info("NuclearReactorSystem initialized");
         SubscribeLocalEvent<NuclearReactorComponent, ComponentInit>(OnInit);
         SubscribeLocalEvent<NuclearReactorComponent, ComponentRemove>(OnRemove);
         SubscribeLocalEvent<NuclearReactorComponent, EntInsertedIntoContainerMessage>(OnRodInserted);
         SubscribeLocalEvent<NuclearReactorComponent, EntRemovedFromContainerMessage>(OnRodRemoved);
         SubscribeLocalEvent<NuclearReactorComponent, InteractUsingEvent>(OnInteractUsing);
+        // Подписка на NuclearReactorSetCoolingMessage уже есть в SharedNuclearReactorSystem
     }
-
     private void OnInit(EntityUid uid, NuclearReactorComponent comp, ComponentInit args)
     {
         _itemSlots.AddItemSlot(uid, NuclearReactorComponent.RodSlot1Id, comp.RodSlot1);
@@ -81,6 +80,7 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
             args.Container.ID == comp.RodSlot3.ID ||
             args.Container.ID == comp.RodSlot4.ID)
         {
+            UpdateCoolingLevel(uid, comp);
             UpdateUI(uid, comp);
         }
     }
@@ -92,8 +92,28 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
             args.Container.ID == comp.RodSlot3.ID ||
             args.Container.ID == comp.RodSlot4.ID)
         {
+            UpdateCoolingLevel(uid, comp);
             UpdateUI(uid, comp);
         }
+    }
+    protected override void OnSetCoolingMessage(EntityUid uid, NuclearReactorComponent comp, NuclearReactorSetCoolingMessage args)
+    {
+        if (comp.Enabled)
+            return; // Нельзя менять при работе
+
+        comp.CoolingLevel = Math.Clamp(args.CoolingLevel, 1, 8);
+        UpdateUI(uid, comp);
+    }
+    private void UpdateCoolingLevel(EntityUid uid, NuclearReactorComponent comp)
+    {
+        int rodCount = 0;
+        if (comp.RodSlot1.HasItem) rodCount++;
+        if (comp.RodSlot2.HasItem) rodCount++;
+        if (comp.RodSlot3.HasItem) rodCount++;
+        if (comp.RodSlot4.HasItem) rodCount++;
+
+        comp.CoolingLevel = rodCount;
+        comp.OptimalTemperature = rodCount * 1000f;
     }
 
     public override void Update(float frameTime)
@@ -128,52 +148,55 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
 
         if (rodCount == 0)
         {
-            comp.CurrentTemperature = MathF.Max(293.15f, comp.CurrentTemperature - 10f * comp.UpdateInterval);
+            comp.CurrentTemperature = MathF.Max(293.15f, comp.CurrentTemperature - 50f * comp.UpdateInterval);
             supplier.MaxSupply = 0;
             UpdateUI(uid, comp);
             return;
         }
 
-        float optimalTemp = rodCount * 1000f;
+        comp.OptimalTemperature = rodCount * 1000f;
+        float optimalMin = comp.OptimalTemperature - 300f;
+        float optimalMax = comp.OptimalTemperature + 300f;
 
-        var targetInfluence = comp.TargetTemperature - comp.CurrentTemperature;
-        comp.CurrentTemperature += (totalHeatGen + targetInfluence * 0.5f) * comp.ThermalInertia * comp.UpdateInterval;
+        // === НАГРЕВ ===
+        float heating = totalHeatGen * comp.UpdateInterval * 0.5f;
+
+        // === ОХЛАЖДЕНИЕ (8 уровней) ===
+        float coolingPower = 0.1f + (comp.CoolingLevel * 0.075f); // 0.175 (ур.1) до 0.7 (ур.8)
+        float cooling = (comp.CurrentTemperature - 293.15f) * coolingPower * comp.UpdateInterval;
+
+        // Влияние целевой температуры
+        float targetInfluence = (comp.TargetTemperature - comp.CurrentTemperature) * 0.1f * comp.UpdateInterval;
+
+        comp.CurrentTemperature += heating - cooling + targetInfluence;
         comp.CurrentTemperature = MathF.Max(293.15f, comp.CurrentTemperature);
 
+        // Расчёт эффективности
         float efficiency;
-        if (comp.CurrentTemperature <= optimalTemp)
+        if (comp.CurrentTemperature < optimalMin)
         {
-            // Ниже оптимальной: мощность пропорциональна температуре
-            efficiency = comp.CurrentTemperature / optimalTemp;
+            efficiency = comp.CurrentTemperature / optimalMin * 0.7f;
+        }
+        else if (comp.CurrentTemperature > optimalMax)
+        {
+            float overheatFactor = (comp.CurrentTemperature - optimalMax) / comp.OptimalTemperature;
+            efficiency = 1.0f + overheatFactor * 0.3f;
+
+            float damage = overheatFactor * 2f * comp.UpdateInterval;
+            comp.Integrity -= damage;
+
+            if (_random.Prob(0.05f))
+                _popup.PopupEntity(Loc.GetString("nuclear-reactor-overheat-warning"), uid, PopupType.LargeCaution);
         }
         else
         {
-            // Выше оптимальной: больше мощности, но плавление
-            float overheatFactor = (comp.CurrentTemperature - optimalTemp) / optimalTemp;
-            efficiency = 1.0f + overheatFactor * 0.5f; // +50% мощности при двойной температуре
-
-            // Урон от перегрева
-            float damage = overheatFactor * 5f * comp.UpdateInterval;
-            comp.Integrity -= damage;
-
-            if (comp.Integrity <= 0)
-            {
-                Meltdown(uid, comp);
-                return;
-            }
+            efficiency = 1.0f;
+            if (comp.Integrity < 100f)
+                comp.Integrity = MathF.Min(100f, comp.Integrity + 0.5f * comp.UpdateInterval);
         }
 
-        var generatedPower = comp.MaxPowerOutput * efficiency * (rodCount / 4f); // Мощность зависит от количества стержней
+        var generatedPower = comp.MaxPowerOutput * efficiency * (rodCount / 4f);
         supplier.MaxSupply = generatedPower;
-
-        // Критическая температура для взрыва
-        float criticalTemp = optimalTemp * 2.5f; // 250% от оптимальной = взрыв
-        if (comp.CurrentTemperature > criticalTemp)
-        {
-            comp.Integrity -= 10f * comp.UpdateInterval;
-            if (_random.Prob(0.1f))
-                _popup.PopupEntity(Loc.GetString("nuclear-reactor-overheat-warning"), uid, PopupType.LargeCaution);
-        }
 
         if (comp.Integrity <= 0)
         {
@@ -190,14 +213,17 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
             return;
 
         rodCount++;
-        var consumptionRate = 0.1f * (comp.CurrentTemperature / 800f); // Базовый расход
+
+        var consumptionRate = 0.03f * (comp.CurrentTemperature / 800f);
         rod.Fuel = MathF.Max(0, rod.Fuel - consumptionRate * comp.UpdateInterval);
+        Dirty(rodEntity.Value, rod);
 
         if (rod.Fuel > 0)
         {
-            totalHeatGen += rod.HeatMultiplier * (rod.Fuel / rod.MaxFuel) * 500f;
+            totalHeatGen += rod.HeatMultiplier * (rod.Fuel / rod.MaxFuel) * 600f;
         }
     }
+
     private void Meltdown(EntityUid uid, NuclearReactorComponent comp)
     {
         _explosion.QueueExplosion(uid, "Default", 200, 5, 10, canCreateVacuum: true);
@@ -209,6 +235,7 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
         var uiSystem = EntityManager.System<SharedUserInterfaceSystem>();
         if (!uiSystem.IsUiOpen(uid, NuclearReactorUiKey.Key))
             return;
+
         var slots = new ContainerInfo[4];
         slots[0] = GetSlotInfo(comp.RodSlot1.Item);
         slots[1] = GetSlotInfo(comp.RodSlot2.Item);
@@ -227,7 +254,8 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
             comp.Integrity,
             slots,
             comp.OptimalTemperature,
-            comp.CriticalTemperature
+            comp.OptimalTemperature * 2.5f,
+            comp.CoolingLevel
         );
 
         uiSystem.SetUiState(uid, NuclearReactorUiKey.Key, state);
@@ -246,7 +274,6 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
     protected override void OnToggleMessage(EntityUid uid, NuclearReactorComponent comp, NuclearReactorToggleMessage args)
     {
         comp.Enabled = !comp.Enabled;
-        // Блокируем слоты при работе
         _itemSlots.SetLock(uid, comp.RodSlot1, comp.Enabled);
         _itemSlots.SetLock(uid, comp.RodSlot2, comp.Enabled);
         _itemSlots.SetLock(uid, comp.RodSlot3, comp.Enabled);
@@ -256,7 +283,7 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
 
     protected override void OnSetTemperatureMessage(EntityUid uid, NuclearReactorComponent comp, NuclearReactorSetTemperatureMessage args)
     {
-        comp.TargetTemperature = Math.Clamp(args.Temperature, 300f, comp.MeltdownTemperature * 1.2f);
+        comp.TargetTemperature = Math.Clamp(args.Temperature, 300f, 5000f);
         UpdateUI(uid, comp);
     }
 

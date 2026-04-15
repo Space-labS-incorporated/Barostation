@@ -40,7 +40,13 @@
                 <Button Name="SetTempButton" Text="Установить" />
             </BoxContainer>
         </BoxContainer>
-
+        <!-- Уровень охлаждения -->
+        <BoxContainer Orientation="Horizontal" HorizontalExpand="True">
+            <Label Text="Уровень охлаждения:" />
+            <Button Name="CoolingDownButton" Text="-" MinSize="30 0" />
+            <Label Name="CoolingLevelLabel" Text="1" MinSize="30 0" HorizontalAlignment="Center" />
+            <Button Name="CoolingUpButton" Text="+" MinSize="30 0" />
+        </BoxContainer>
         <!-- Мощность -->
         <BoxContainer Orientation="Horizontal">
             <Label Text="Выработка:" />

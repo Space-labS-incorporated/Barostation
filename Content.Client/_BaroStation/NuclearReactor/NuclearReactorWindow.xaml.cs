@@ -15,6 +15,7 @@ public sealed partial class NuclearReactorWindow : DefaultWindow
     public event Action<bool>? ToggleReactor;
     public event Action<float>? SetTemperature;
     public event Action<int>? EjectRod;
+    public event Action<int>? SetCoolingLevel;
 
     private readonly SlotButton[] _slotButtons = new SlotButton[4];
     private NuclearReactorUiState? _lastState;
@@ -24,10 +25,25 @@ public sealed partial class NuclearReactorWindow : DefaultWindow
         RobustXamlLoader.Load(this);
 
         ToggleButton.OnPressed += _ => ToggleReactor?.Invoke(!(_lastState?.Enabled ?? false));
+
         SetTempButton.OnPressed += _ =>
         {
             if (float.TryParse(TargetTempInput.Text, out var temp))
                 SetTemperature?.Invoke(temp);
+        };
+
+        CoolingDownButton.OnPressed += _ =>
+        {
+            var newLevel = (_lastState?.CoolingLevel ?? 1) - 1;
+            if (newLevel >= 1)
+                SetCoolingLevel?.Invoke(newLevel);
+        };
+
+        CoolingUpButton.OnPressed += _ =>
+        {
+            var newLevel = (_lastState?.CoolingLevel ?? 1) + 1;
+            if (newLevel <= 8)  
+                SetCoolingLevel?.Invoke(newLevel);
         };
 
         for (int i = 0; i < 4; i++)
@@ -46,40 +62,52 @@ public sealed partial class NuclearReactorWindow : DefaultWindow
         StatusLabel.Text = state.Enabled ? "АКТИВЕН" : "ВЫКЛЮЧЕН";
         StatusLabel.SetOnlyStyleClass(state.Enabled ? "LabelCaution" : "LabelSecondaryColor");
         ToggleButton.Text = state.Enabled ? "Выключить" : "Включить";
+        TargetTempInput.Editable = !state.Enabled;
+        SetTempButton.Disabled = state.Enabled;
+        CoolingDownButton.Disabled = state.Enabled || state.CoolingLevel <= 1;
+        CoolingUpButton.Disabled = state.Enabled || state.CoolingLevel >= 8;
 
         int rodCount = 0;
         foreach (var slot in state.RodSlots)
             if (slot.HasItem) rodCount++;
 
-        float optimalTemp = rodCount * 1000f;
+        float rodOptimalTemp = rodCount * 1000f;
         RodCountLabel.Text = $"{rodCount} / 4";
-        OptimalTempLabel.Text = $"{optimalTemp:F0} K";
+        OptimalTempLabel.Text = $"{rodOptimalTemp:F0} K";
 
         if (rodCount == 0)
         {
             StateLabel.Text = "Нет стержней";
             StateLabel.SetOnlyStyleClass("LabelSecondaryColor");
         }
-        else if (state.CurrentTemperature < optimalTemp - 50)
-        {
-            StateLabel.Text = "Недостаточная температура";
-            StateLabel.SetOnlyStyleClass("LabelCaution");
-        }
-        else if (state.CurrentTemperature > optimalTemp + 50)
-        {
-            StateLabel.Text = "ЧРЕЗМЕРНАЯ ТЕМПЕРАТУРА! ПЛАВЛЕНИЕ!";
-            StateLabel.SetOnlyStyleClass("LabelDanger");
-        }
         else
         {
-            StateLabel.Text = "Оптимальный режим";
-            StateLabel.SetOnlyStyleClass("LabelGood");
+            float optimalTemp = state.OptimalTemperature;
+            float optimalMin = optimalTemp - 300f;
+            float optimalMax = optimalTemp + 300f;
+
+            if (state.CurrentTemperature < optimalMin)
+            {
+                StateLabel.Text = $"❄️ Недостаточная (< {optimalMin:F0} K)";
+                StateLabel.SetOnlyStyleClass("LabelCaution");
+            }
+            else if (state.CurrentTemperature > optimalMax)
+            {
+                StateLabel.Text = $"🔥 ЧРЕЗМЕРНАЯ! ПЛАВЛЕНИЕ! (> {optimalMax:F0} K)";
+                StateLabel.SetOnlyStyleClass("LabelDanger");
+            }
+            else
+            {
+                StateLabel.Text = $"✅ Оптимальный режим ({optimalMin:F0} - {optimalMax:F0} K)";
+                StateLabel.SetOnlyStyleClass("LabelGood");
+            }
         }
 
         TemperatureLabel.Text = $"{state.CurrentTemperature:F1} K";
         TemperatureBar.Value = state.CurrentTemperature;
         TemperatureBar.MaxValue = Math.Max(5000, state.CurrentTemperature * 1.2f);
         TargetTempInput.Text = state.TargetTemperature.ToString("F0");
+        CoolingLevelLabel.Text = state.CoolingLevel.ToString();
 
         PowerLabel.Text = $"{state.PowerOutput / 1000f:F1} kW";
 

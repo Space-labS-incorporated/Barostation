@@ -11,6 +11,7 @@ public sealed class NuclearReactorBoundUserInterface : BoundUserInterface
     private NuclearReactorWindow? _window;
 
     public NuclearReactorBoundUserInterface(EntityUid owner, Enum uiKey) : base(owner, uiKey) { }
+    public event Action<int>? SetCoolingLevel;
 
     protected override void Open()
     {
@@ -20,6 +21,7 @@ public sealed class NuclearReactorBoundUserInterface : BoundUserInterface
         _window.ToggleReactor += enabled => SendMessage(new NuclearReactorToggleMessage());
         _window.SetTemperature += temp => SendMessage(new NuclearReactorSetTemperatureMessage(temp));
         _window.EjectRod += slot => SendMessage(new NuclearReactorEjectMessage(slot));
+        _window.SetCoolingLevel += level => SendMessage(new NuclearReactorSetCoolingMessage(level)); // ДОБАВИТЬ
         _window.OpenCentered();
     }
 

@@ -5,7 +5,7 @@ using Content.Shared.Containers.ItemSlots;
 
 namespace Content.Shared._BaroStation.NuclearReactor;
 
-[NetworkedComponent, RegisterComponent]
+[NetworkedComponent, RegisterComponent, AutoGenerateComponentState]
 [Access(typeof(SharedNuclearReactorSystem))]
 public sealed partial class NuclearReactorComponent : Component
 {
@@ -14,40 +14,31 @@ public sealed partial class NuclearReactorComponent : Component
     public const string RodSlot3Id = "rod_slot_3";
     public const string RodSlot4Id = "rod_slot_4";
 
-    [DataField("rodSlot1")]
+    [DataField("rodSlot1"), AutoNetworkedField]
     public ItemSlot RodSlot1 = new();
 
-    [DataField("rodSlot2")]
+    [DataField("rodSlot2"), AutoNetworkedField]
     public ItemSlot RodSlot2 = new();
 
-    [DataField("rodSlot3")]
+    [DataField("rodSlot3"), AutoNetworkedField]
     public ItemSlot RodSlot3 = new();
 
-    [DataField("rodSlot4")]
+    [DataField("rodSlot4"), AutoNetworkedField]
     public ItemSlot RodSlot4 = new();
 
-    [DataField("currentTemperature"), ViewVariables(VVAccess.ReadWrite)]
+    [DataField("currentTemperature"), ViewVariables(VVAccess.ReadWrite), AutoNetworkedField]
     public float CurrentTemperature = 293.15f;
 
-    [DataField("targetTemperature"), ViewVariables(VVAccess.ReadWrite)]
+    [DataField("targetTemperature"), ViewVariables(VVAccess.ReadWrite), AutoNetworkedField]
     public float TargetTemperature = 500f;
-
-    [DataField("optimalTemperature")]
-    public float OptimalTemperature = 800f;
-
-    [DataField("criticalTemperature")]
-    public float CriticalTemperature = 1500f;
-
-    [DataField("meltdownTemperature")]
-    public float MeltdownTemperature = 2500f;
 
     [DataField("maxPowerOutput")]
     public float MaxPowerOutput = 250000f;
 
-    [DataField("integrity"), ViewVariables(VVAccess.ReadWrite)]
+    [DataField("integrity"), ViewVariables(VVAccess.ReadWrite), AutoNetworkedField]
     public float Integrity = 100f;
 
-    [DataField("enabled"), ViewVariables(VVAccess.ReadWrite)]
+    [DataField("enabled"), ViewVariables(VVAccess.ReadWrite), AutoNetworkedField]
     public bool Enabled = false;
 
     [DataField("thermalInertia")]
@@ -61,8 +52,25 @@ public sealed partial class NuclearReactorComponent : Component
 
     [DataField("meltdownSound")]
     public SoundSpecifier? MeltdownSound = new SoundPathSpecifier("/Audio/Effects/meltdown.ogg");
-}
 
+    /// <summary>
+    /// Уровень охлаждения (1-4). Зависит от количества стержней.
+    /// </summary>
+    [DataField("coolingLevel"), ViewVariables(VVAccess.ReadWrite), AutoNetworkedField]
+    public int CoolingLevel = 1;
+
+    /// <summary>
+    /// Оптимальная температура (вычисляется динамически)
+    /// </summary>
+    [DataField("optimalTemperature"), ViewVariables, AutoNetworkedField]
+    public float OptimalTemperature = 1000f;
+}
+[Serializable, NetSerializable]
+public sealed class NuclearReactorSetCoolingMessage : BoundUserInterfaceMessage
+{
+    public int CoolingLevel;
+    public NuclearReactorSetCoolingMessage(int level) => CoolingLevel = level;
+}
 [Serializable, NetSerializable]
 public sealed class NuclearReactorUiState : BoundUserInterfaceState
 {
@@ -74,8 +82,10 @@ public sealed class NuclearReactorUiState : BoundUserInterfaceState
     public ContainerInfo[] RodSlots;
     public float OptimalTemperature;
     public float CriticalTemperature;
+    public int CoolingLevel;
 
-    public NuclearReactorUiState(bool enabled, float curTemp, float tarTemp, float power, float integrity, ContainerInfo[] slots, float optTemp, float critTemp)
+    public NuclearReactorUiState(bool enabled, float curTemp, float tarTemp, float power,
+        float integrity, ContainerInfo[] slots, float optTemp, float critTemp, int coolingLevel)
     {
         Enabled = enabled;
         CurrentTemperature = curTemp;
@@ -85,6 +95,7 @@ public sealed class NuclearReactorUiState : BoundUserInterfaceState
         RodSlots = slots;
         OptimalTemperature = optTemp;
         CriticalTemperature = critTemp;
+        CoolingLevel = coolingLevel;
     }
 }
 
