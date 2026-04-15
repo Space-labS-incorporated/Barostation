@@ -1,0 +1,12 @@
+- type: entity
+  id: CrateEngineeringNuclearReactor
+  parent: CrateEngineering
+  name: ящик с ядерным реактором
+  description: Радиоактивно.
+  components:
+  - type: StorageFill
+    contents:
+      - id: NuclearReactor
+        amount: 1
+      - id: UraniumRod
+        amount: 4
