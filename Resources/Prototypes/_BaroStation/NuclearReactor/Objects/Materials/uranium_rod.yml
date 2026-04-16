@@ -1,8 +1,8 @@
 - type: entity
   id: UraniumRod
   parent: BaseItem
-  name: урановый стержень
-  description: Тепловыделяющий элемент на основе обогащенного урана. Используется в ядерных реакторах.
+  name: uranium rod
+  description: A fuel element based on enriched uranium. Used in nuclear reactors.
   components:
   - type: Sprite
     sprite: _BaroStation/NuclearReactor/uranium_rod.rsi
@@ -10,8 +10,8 @@
   - type: Item
     size: Normal
   - type: UraniumRod
-    fuel: 600
-    maxFuel: 600
+    fuel: 3000
+    maxFuel: 3000
   - type: PhysicalComposition
     materialComposition:
       Uranium: 200

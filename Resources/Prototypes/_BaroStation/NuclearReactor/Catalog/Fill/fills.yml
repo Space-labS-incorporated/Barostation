@@ -1,8 +1,8 @@
 - type: entity
   id: CrateEngineeringNuclearReactor
   parent: CrateEngineering
-  name: ящик с ядерным реактором
-  description: Радиоактивно.
+  name: nuclear reactor crate
+  description: Contains a ready-to-install nuclear reactor and 4 uranium rods.
   components:
   - type: StorageFill
     contents:
