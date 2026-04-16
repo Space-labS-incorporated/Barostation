@@ -27,6 +27,10 @@
     interfaces:
       enum.NuclearReactorUiKey.Key:
         type: NuclearReactorBoundUserInterface
+  - type: ActivatableUI
+    key: enum.NuclearReactorUiKey.Key
+    requireComplex: true
+  - type: ActivatableUIRequiresPower
   - type: Transform
     anchored: true
   - type: Physics
@@ -54,7 +58,25 @@
         acts: ["Destruction"]
       - !type:PlaySoundBehavior
         sound: /Audio/Effects/metalbreak.ogg
-  - type: ActivatableUI
-    key: enum.NuclearReactorUiKey.Key
-    requireComplex: true
-  - type: ActivatableUIRequiresPower
+  
+  # === ПОДКЛЮЧЕНИЕ К ЭЛЕКТРОСЕТИ ===
+  - type: NodeContainer
+    examinable: true
+    nodes:
+      output:
+        !type:CableDeviceNode
+        nodeGroupID: HVPower
+  
+  # === МОНИТОРИНГ ЭНЕРГИИ (КАК У AME) ===
+  - type: PowerMonitoringDevice
+    group: Generator
+    loadNode: output
+    sprite: _BaroStation/NuclearReactor/reactor.rsi
+    state: reactor_off
+  
+  - type: Electrified
+    onHandInteract: false
+    onInteractUsing: false
+    onBump: false
+    requirePower: true
+    highVoltageNode: output
