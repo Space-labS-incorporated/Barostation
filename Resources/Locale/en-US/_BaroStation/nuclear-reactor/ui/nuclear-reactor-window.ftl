@@ -1,0 +1,25 @@
+nuclear-reactor-window-title = Nuclear Reactor
+nuclear-reactor-window-status = Status:
+nuclear-reactor-window-mode = Operating Mode:
+nuclear-reactor-window-optimal = Optimal:
+nuclear-reactor-window-temperature = Core Temperature:
+nuclear-reactor-window-set-temperature = Set Temperature (K):
+nuclear-reactor-window-cooling = Cooling Level:
+nuclear-reactor-window-power = Power Output:
+nuclear-reactor-window-integrity = Integrity:
+nuclear-reactor-window-rods = Fuel Rods (Uranium Rods):
+nuclear-reactor-window-no-rods = WARNING: Reactor cannot operate without fuel rods!
+nuclear-reactor-window-depleted-warning = WARNING: One or more fuel rods are depleted! Replace them.
+nuclear-reactor-window-toggle-on = Turn On
+nuclear-reactor-window-toggle-off = Turn Off
+nuclear-reactor-window-set = Set
+
+nuclear-reactor-status-active = ACTIVE
+nuclear-reactor-status-inactive = INACTIVE
+nuclear-reactor-mode-no-rods = No active rods
+nuclear-reactor-mode-insufficient = Insufficient (< {$min} K)
+nuclear-reactor-mode-excessive = EXCESSIVE! MELTDOWN! (> {$max} K)
+nuclear-reactor-mode-optimal = Optimal Mode ({$min} - {$max} K)
+
+nuclear-reactor-full = Reactor is full! No free slots for fuel rods.
+nuclear-reactor-overheat-warning = Reactor is overheating!

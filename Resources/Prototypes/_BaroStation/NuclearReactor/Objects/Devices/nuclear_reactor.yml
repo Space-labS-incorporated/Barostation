@@ -1,8 +1,8 @@
 - type: entity
   id: NuclearReactor
   parent: BaseMachinePowered
-  name: ядерный реактор
-  description: Вырабатывает огромное количество энергии за счет распада урановых стержней. Требует контроля температуры.
+  name: nuclear reactor
+  description: Generates massive amounts of energy through uranium rod decay. Requires temperature control.
   components:
   - type: Sprite
     sprite: _BaroStation/NuclearReactor/reactor.rsi
@@ -58,22 +58,20 @@
         acts: ["Destruction"]
       - !type:PlaySoundBehavior
         sound: /Audio/Effects/metalbreak.ogg
-  
-  # === ПОДКЛЮЧЕНИЕ К ЭЛЕКТРОСЕТИ ===
+
   - type: NodeContainer
     examinable: true
     nodes:
       output:
         !type:CableDeviceNode
         nodeGroupID: HVPower
-  
-  # === МОНИТОРИНГ ЭНЕРГИИ (КАК У AME) ===
+
   - type: PowerMonitoringDevice
     group: Generator
     loadNode: output
     sprite: _BaroStation/NuclearReactor/reactor.rsi
     state: reactor_off
-  
+
   - type: Electrified
     onHandInteract: false
     onInteractUsing: false

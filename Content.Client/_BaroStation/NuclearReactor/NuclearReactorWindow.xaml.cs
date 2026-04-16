@@ -42,7 +42,7 @@ public sealed partial class NuclearReactorWindow : DefaultWindow
         CoolingUpButton.OnPressed += _ =>
         {
             var newLevel = (_lastState?.CoolingLevel ?? 1) + 1;
-            if (newLevel <= 8)  
+            if (newLevel <= 8)
                 SetCoolingLevel?.Invoke(newLevel);
         };
 
@@ -59,25 +59,39 @@ public sealed partial class NuclearReactorWindow : DefaultWindow
     {
         _lastState = state;
 
-        StatusLabel.Text = state.Enabled ? "АКТИВЕН" : "ВЫКЛЮЧЕН";
-        StatusLabel.SetOnlyStyleClass(state.Enabled ? "LabelCaution" : "LabelSecondaryColor");
-        ToggleButton.Text = state.Enabled ? "Выключить" : "Включить";
+        if (state.Enabled)
+        {
+            StatusLabel.Text = Loc.GetString("nuclear-reactor-status-active");
+            StatusLabel.SetOnlyStyleClass("LabelGood");
+        }
+        else
+        {
+            StatusLabel.Text = Loc.GetString("nuclear-reactor-status-inactive");
+            StatusLabel.SetOnlyStyleClass("LabelDanger");
+        }
+
+        ToggleButton.Text = state.Enabled
+            ? Loc.GetString("nuclear-reactor-window-toggle-off")
+            : Loc.GetString("nuclear-reactor-window-toggle-on");
         TargetTempInput.Editable = !state.Enabled;
         SetTempButton.Disabled = state.Enabled;
         CoolingDownButton.Disabled = state.Enabled || state.CoolingLevel <= 1;
         CoolingUpButton.Disabled = state.Enabled || state.CoolingLevel >= 8;
 
-        int rodCount = 0;
+        int activeRodCount = 0;
         foreach (var slot in state.RodSlots)
-            if (slot.HasItem) rodCount++;
+        {
+            if (slot.HasItem && !slot.Depleted) activeRodCount++;
+        }
 
-        float rodOptimalTemp = rodCount * 1000f;
-        RodCountLabel.Text = $"{rodCount} / 4";
+        float rodOptimalTemp = activeRodCount * 1000f;
         OptimalTempLabel.Text = $"{rodOptimalTemp:F0} K";
 
-        if (rodCount == 0)
+        DepletedWarningLabel.Visible = state.HasDepletedRod;
+
+        if (activeRodCount == 0)
         {
-            StateLabel.Text = "Нет стержней";
+            StateLabel.Text = Loc.GetString("nuclear-reactor-mode-no-rods");
             StateLabel.SetOnlyStyleClass("LabelSecondaryColor");
         }
         else
@@ -88,24 +102,24 @@ public sealed partial class NuclearReactorWindow : DefaultWindow
 
             if (state.CurrentTemperature < optimalMin)
             {
-                StateLabel.Text = $"❄️ Недостаточная (< {optimalMin:F0} K)";
+                StateLabel.Text = Loc.GetString("nuclear-reactor-mode-insufficient", ("min", optimalMin));
                 StateLabel.SetOnlyStyleClass("LabelCaution");
             }
             else if (state.CurrentTemperature > optimalMax)
             {
-                StateLabel.Text = $"🔥 ЧРЕЗМЕРНАЯ! ПЛАВЛЕНИЕ! (> {optimalMax:F0} K)";
+                StateLabel.Text = Loc.GetString("nuclear-reactor-mode-excessive", ("max", optimalMax));
                 StateLabel.SetOnlyStyleClass("LabelDanger");
             }
             else
             {
-                StateLabel.Text = $"✅ Оптимальный режим ({optimalMin:F0} - {optimalMax:F0} K)";
+                StateLabel.Text = Loc.GetString("nuclear-reactor-mode-optimal", ("min", optimalMin), ("max", optimalMax));
                 StateLabel.SetOnlyStyleClass("LabelGood");
             }
         }
 
         TemperatureLabel.Text = $"{state.CurrentTemperature:F1} K";
         TemperatureBar.Value = state.CurrentTemperature;
-        TemperatureBar.MaxValue = Math.Max(5000, state.CurrentTemperature * 1.2f);
+        TemperatureBar.MaxValue = 30000;
         TargetTempInput.Text = state.TargetTemperature.ToString("F0");
         CoolingLevelLabel.Text = state.CoolingLevel.ToString();
 
@@ -124,7 +138,7 @@ public sealed partial class NuclearReactorWindow : DefaultWindow
             _slotButtons[i].UpdateState(state.RodSlots[i]);
         }
 
-        WarningLabel.Visible = rodCount == 0;
+        WarningLabel.Visible = activeRodCount == 0;
     }
 
     private sealed class SlotButton : Button
@@ -146,7 +160,14 @@ public sealed partial class NuclearReactorWindow : DefaultWindow
             };
 
             _textLabel = new Label { Text = "Пусто", HorizontalAlignment = HAlignment.Center };
-            _fuelBar = new ProgressBar { MinSize = new Vector2(80, 10), Visible = false };
+            _fuelBar = new ProgressBar
+            {
+                MinSize = new Vector2(80, 10),
+                Visible = false,
+                MinValue = 0,
+                MaxValue = 1,
+                Value = 0
+            };
 
             vbox.AddChild(_textLabel);
             vbox.AddChild(_fuelBar);
@@ -157,25 +178,48 @@ public sealed partial class NuclearReactorWindow : DefaultWindow
         {
             if (info.HasItem)
             {
-                _textLabel.Text = info.ItemName ?? "Стержень";
-                if (info.FuelLeft.HasValue)
+                if (info.Depleted)
                 {
+                    _textLabel.Text = info.ItemName ?? "Стержень";
+                    _textLabel.FontColorOverride = Color.Red;
                     _fuelBar.Visible = true;
-                    _fuelBar.Value = info.FuelLeft.Value;
-                    if (info.FuelLeft.Value < 0.2f)
-                        _fuelBar.ForegroundStyleBoxOverride = new StyleBoxFlat { BackgroundColor = Color.Red };
-                    else
-                        _fuelBar.ForegroundStyleBoxOverride = new StyleBoxFlat { BackgroundColor = Color.LimeGreen };
+                    _fuelBar.Value = 0;
+                    _fuelBar.ForegroundStyleBoxOverride = new StyleBoxFlat { BackgroundColor = Color.Gray };
+                    Disabled = false;
                 }
                 else
                 {
-                    _fuelBar.Visible = false;
+                    _textLabel.Text = info.ItemName ?? "Стержень";
+                    _textLabel.FontColorOverride = Color.White;
+
+                    if (info.FuelLeft.HasValue)
+                    {
+                        _fuelBar.Visible = true;
+                        _fuelBar.Value = info.FuelLeft.Value;
+
+                        if (info.FuelLeft.Value < 0.2f)
+                            _fuelBar.ForegroundStyleBoxOverride = new StyleBoxFlat { BackgroundColor = Color.Red };
+                        else if (info.FuelLeft.Value < 0.5f)
+                            _fuelBar.ForegroundStyleBoxOverride = new StyleBoxFlat { BackgroundColor = Color.Orange };
+                        else
+                            _fuelBar.ForegroundStyleBoxOverride = new StyleBoxFlat { BackgroundColor = Color.LimeGreen };
+
+                        Disabled = false;
+                    }
+                    else
+                    {
+                        _fuelBar.Visible = false;
+                        Disabled = false;
+                    }
                 }
-                Disabled = false;
+
+                _fuelBar.InvalidateMeasure();
+                _fuelBar.InvalidateArrange();
             }
             else
             {
                 _textLabel.Text = $"Слот {SlotIndex + 1}\n(Пусто)";
+                _textLabel.FontColorOverride = Color.White;
                 _fuelBar.Visible = false;
                 Disabled = true;
             }

@@ -53,24 +53,23 @@ public sealed partial class NuclearReactorComponent : Component
     [DataField("meltdownSound")]
     public SoundSpecifier? MeltdownSound = new SoundPathSpecifier("/Audio/Effects/meltdown.ogg");
 
-    /// <summary>
-    /// Уровень охлаждения (1-4). Зависит от количества стержней.
-    /// </summary>
     [DataField("coolingLevel"), ViewVariables(VVAccess.ReadWrite), AutoNetworkedField]
     public int CoolingLevel = 1;
 
-    /// <summary>
-    /// Оптимальная температура (вычисляется динамически)
-    /// </summary>
     [DataField("optimalTemperature"), ViewVariables, AutoNetworkedField]
     public float OptimalTemperature = 1000f;
+
+    [DataField("maxTemperature")]
+    public float MaxTemperature = 30000f;
 }
+
 [Serializable, NetSerializable]
 public sealed class NuclearReactorSetCoolingMessage : BoundUserInterfaceMessage
 {
     public int CoolingLevel;
     public NuclearReactorSetCoolingMessage(int level) => CoolingLevel = level;
 }
+
 [Serializable, NetSerializable]
 public sealed class NuclearReactorUiState : BoundUserInterfaceState
 {
@@ -83,9 +82,11 @@ public sealed class NuclearReactorUiState : BoundUserInterfaceState
     public float OptimalTemperature;
     public float CriticalTemperature;
     public int CoolingLevel;
+    public bool HasDepletedRod;
 
     public NuclearReactorUiState(bool enabled, float curTemp, float tarTemp, float power,
-        float integrity, ContainerInfo[] slots, float optTemp, float critTemp, int coolingLevel)
+        float integrity, ContainerInfo[] slots, float optTemp, float critTemp,
+        int coolingLevel, bool hasDepletedRod)
     {
         Enabled = enabled;
         CurrentTemperature = curTemp;
@@ -96,6 +97,7 @@ public sealed class NuclearReactorUiState : BoundUserInterfaceState
         OptimalTemperature = optTemp;
         CriticalTemperature = critTemp;
         CoolingLevel = coolingLevel;
+        HasDepletedRod = hasDepletedRod;
     }
 }
 
@@ -105,12 +107,14 @@ public sealed class ContainerInfo
     public bool HasItem;
     public string? ItemName;
     public float? FuelLeft;
+    public bool Depleted;
 
-    public ContainerInfo(bool hasItem, string? name, float? fuel)
+    public ContainerInfo(bool hasItem, string? name, float? fuel, bool depleted)
     {
         HasItem = hasItem;
         ItemName = name;
         FuelLeft = fuel;
+        Depleted = depleted;
     }
 }
 

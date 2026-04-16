@@ -1,69 +1,73 @@
 <DefaultWindow xmlns="https://spacestation14.io"
-               Title="Ядерный реактор"
-               MinSize="550 550">
+               Title="{Loc 'nuclear-reactor-window-title'}"
+               MinSize="550 600">
     <BoxContainer Orientation="Vertical" Margin="8 8 8 8" SeparationOverride="4">
 
         <!-- Статус -->
         <BoxContainer Orientation="Horizontal" HorizontalExpand="True" SeparationOverride="4">
-            <Label Text="Статус:" />
-            <Label Name="StatusLabel" Text="ВЫКЛЮЧЕН" StyleClasses="LabelSecondaryColor" />
+            <Label Text="{Loc 'nuclear-reactor-window-status'}" />
+            <Label Name="StatusLabel" Text="{Loc 'nuclear-reactor-status-inactive'}" />
             <Control HorizontalExpand="True" />
-            <Button Name="ToggleButton" Text="Включить" />
-        </BoxContainer>
-
-        <!-- Информация о стержнях -->
-        <BoxContainer Orientation="Horizontal" HorizontalExpand="True">
-            <Label Text="Стержней установлено:" />
-            <Label Name="RodCountLabel" Text="0 / 4" />
-            <Control HorizontalExpand="True" />
-            <Label Text="Оптимальная температура:" />
-            <Label Name="OptimalTempLabel" Text="0 K" />
+            <Button Name="ToggleButton" Text="{Loc 'nuclear-reactor-window-toggle-on'}" />
         </BoxContainer>
 
         <!-- Режим работы -->
         <BoxContainer Orientation="Horizontal" HorizontalExpand="True">
-            <Label Text="Режим работы:" />
-            <Label Name="StateLabel" Text="Нет стержней" />
+            <Label Text="{Loc 'nuclear-reactor-window-mode'}" />
+            <Label Name="StateLabel" Text="{Loc 'nuclear-reactor-mode-no-rods'}" />
+            <Control HorizontalExpand="True" />
+            <Label Text="{Loc 'nuclear-reactor-window-optimal'}" />
+            <Label Name="OptimalTempLabel" Text="0 K" />
         </BoxContainer>
 
         <!-- Температура -->
         <BoxContainer Orientation="Vertical">
             <BoxContainer Orientation="Horizontal" HorizontalExpand="True">
-                <Label Text="Температура активной зоны:" />
+                <Label Text="{Loc 'nuclear-reactor-window-temperature'}" />
                 <Label Name="TemperatureLabel" Text="293 K" HorizontalAlignment="Right" />
             </BoxContainer>
-            <ProgressBar Name="TemperatureBar" MinValue="0" MaxValue="5000" Value="293" />
+            <ProgressBar Name="TemperatureBar" MinValue="0" MaxValue="30000" Value="293" />
 
             <BoxContainer Orientation="Horizontal" HorizontalExpand="True" Margin="0 4">
-                <Label Text="Задать температуру (K):" />
+                <Label Text="{Loc 'nuclear-reactor-window-set-temperature'}" />
                 <LineEdit Name="TargetTempInput" Text="500" HorizontalExpand="True" />
-                <Button Name="SetTempButton" Text="Установить" />
+                <Button Name="SetTempButton" Text="{Loc 'nuclear-reactor-window-set'}" />
             </BoxContainer>
         </BoxContainer>
+
         <!-- Уровень охлаждения -->
         <BoxContainer Orientation="Horizontal" HorizontalExpand="True">
-            <Label Text="Уровень охлаждения:" />
+            <Label Text="{Loc 'nuclear-reactor-window-cooling'}" />
             <Button Name="CoolingDownButton" Text="-" MinSize="30 0" />
             <Label Name="CoolingLevelLabel" Text="1" MinSize="30 0" HorizontalAlignment="Center" />
             <Button Name="CoolingUpButton" Text="+" MinSize="30 0" />
         </BoxContainer>
+
         <!-- Мощность -->
         <BoxContainer Orientation="Horizontal">
-            <Label Text="Выработка:" />
+            <Label Text="{Loc 'nuclear-reactor-window-power'}" />
             <Label Name="PowerLabel" Text="0 kW" />
             <Control HorizontalExpand="True" />
-            <Label Text="Целостность:" />
+            <Label Text="{Loc 'nuclear-reactor-window-integrity'}" />
             <Label Name="IntegrityLabel" Text="100%" />
         </BoxContainer>
 
+        <!-- Предупреждение о истощённом стержне -->
+        <Label Name="DepletedWarningLabel"
+               Text="{Loc 'nuclear-reactor-window-depleted-warning'}"
+               StyleClasses="LabelDanger"
+               HorizontalAlignment="Center"
+               Margin="0 5"
+               Visible="False" />
+
         <!-- Слоты -->
-        <Label Text="ТВЭЛы (Урановые стержни):" Margin="0 8 0 0" />
+        <Label Text="{Loc 'nuclear-reactor-window-rods'}" Margin="0 8 0 0" />
         <GridContainer Name="RodsGrid" Columns="4" HorizontalExpand="True" />
 
-        <Label Name="WarningLabel" 
-               Text="ВНИМАНИЕ: Реактор без стержней не работает!" 
-               StyleClasses="LabelCaution" 
-               HorizontalAlignment="Center" 
+        <Label Name="WarningLabel"
+               Text="{Loc 'nuclear-reactor-window-no-rods'}"
+               StyleClasses="LabelCaution"
+               HorizontalAlignment="Center"
                Margin="0 10" />
     </BoxContainer>
 </DefaultWindow>
