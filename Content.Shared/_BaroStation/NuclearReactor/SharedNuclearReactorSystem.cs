@@ -1,5 +1,3 @@
-using Content.Shared._BaroStation.NuclearReactor;
-
 namespace Content.Shared._BaroStation.NuclearReactor;
 
 public abstract class SharedNuclearReactorSystem : EntitySystem

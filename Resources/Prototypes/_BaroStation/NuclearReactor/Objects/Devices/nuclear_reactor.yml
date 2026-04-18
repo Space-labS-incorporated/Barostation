@@ -23,6 +23,9 @@
     supplyRampTolerance: 5000
   - type: Anchorable
   - type: Pullable
+  - type: DeviceLinkSource
+    ports:
+      - NuclearReactorLinkSource
   - type: UserInterface
     interfaces:
       enum.NuclearReactorUiKey.Key:
@@ -78,3 +81,17 @@
     onBump: false
     requirePower: true
     highVoltageNode: output
+
+  - type: RadiationSource
+    intensity: 1
+    enabled: false
+
+- type: sourcePort
+  id: NuclearReactorLinkSource
+  name: nuclear-reactor-link-source-port
+  description: nuclear-reactor-link-source-port-desc
+
+- type: sinkPort
+  id: NuclearReactorLink
+  name: nuclear-reactor-link-port
+  description: nuclear-reactor-link-port-desc

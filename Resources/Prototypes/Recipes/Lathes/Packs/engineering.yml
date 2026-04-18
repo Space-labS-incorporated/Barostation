@@ -52,6 +52,7 @@
   id: EngineeringBoardsStatic
   recipes:
   - SpaceHeaterMachineCircuitBoard
+  - NuclearReactorConsoleCircuitboard #BaroStation
 
 ## Dynamic
 

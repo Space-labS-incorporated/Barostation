@@ -1,0 +1,24 @@
+- type: latheRecipe
+  parent: BaseGoldCircuitboardRecipe
+  id: NuclearReactorConsoleCircuitboard
+  result: NuclearReactorConsoleCircuitboard
+  completetime: 4
+  categories:
+  - Engineering   # <-- Добавьте категорию
+  materials:
+    Glass: 1000
+    Steel: 200
+    Gold: 100
+
+- type: entity
+  id: NuclearReactorConsoleCircuitboard
+  parent: BaseComputerCircuitboard
+  name: nuclear reactor console circuit board
+  description: A computer printed circuit board for a nuclear reactor console.
+  components:
+  - type: Sprite
+    state: cpu_supply
+  - type: ComputerBoard
+    prototype: NuclearReactorConsole
+  - type: StaticPrice
+    price: 150
