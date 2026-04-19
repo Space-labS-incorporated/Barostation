@@ -1,7 +1,9 @@
+using Content.Shared.Containers.ItemSlots;
+using Content.Shared.DeviceLinking;
 using Robust.Shared.Audio;
 using Robust.Shared.GameStates;
+using Robust.Shared.Prototypes;
 using Robust.Shared.Serialization;
-using Content.Shared.Containers.ItemSlots;
 
 namespace Content.Shared._BaroStation.NuclearReactor;
 
@@ -61,6 +63,12 @@ public sealed partial class NuclearReactorComponent : Component
 
     [DataField("maxTemperature")]
     public float MaxTemperature = 30000f;
+
+    /// <summary>
+    /// Порт для отправки сигнала линковки на консоль.
+    /// </summary>
+    [DataField]
+    public ProtoId<SourcePortPrototype> LinkSourcePort = "NuclearReactorLinkSource";
 }
 
 [Serializable, NetSerializable]

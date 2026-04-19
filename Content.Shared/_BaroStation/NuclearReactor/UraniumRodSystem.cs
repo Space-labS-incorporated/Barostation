@@ -1,14 +1,7 @@
-using Content.Shared._BaroStation.NuclearReactor;
 using Content.Shared.Examine;
-using JetBrains.Annotations;
-using Robust.Shared.Localization;
 
 namespace Content.Shared._BaroStation.NuclearReactor;
 
-/// <summary>
-/// Adds details about fuel level when examining uranium rods.
-/// </summary>
-[UsedImplicitly]
 public sealed class UraniumRodSystem : EntitySystem
 {
     public override void Initialize()

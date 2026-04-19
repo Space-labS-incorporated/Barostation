@@ -1,12 +1,17 @@
+using Content.Server.DeviceLinking.Systems;
 using Content.Server.Explosion.EntitySystems;
 using Content.Server.Power.Components;
 using Content.Server.Power.EntitySystems;
+using Content.Server.Radiation.Components;
+using Content.Server.Radiation.Systems;
 using Content.Shared._BaroStation.NuclearReactor;
-using Content.Shared.Audio;
 using Content.Shared.Containers.ItemSlots;
 using Content.Shared.Interaction;
 using Content.Shared.Popups;
+using Content.Shared.Radiation.Components;
+using Content.Shared.Tools.Systems;
 using Content.Shared.UserInterface;
+using Content.Shared.Whitelist;
 using Robust.Server.GameObjects;
 using Robust.Shared.Audio.Systems;
 using Robust.Shared.Containers;
@@ -21,8 +26,8 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
     [Dependency] private readonly ExplosionSystem _explosion = default!;
     [Dependency] private readonly IRobustRandom _random = default!;
     [Dependency] private readonly SharedPopupSystem _popup = default!;
-    [Dependency] private readonly SharedAudioSystem _audio = default!;
     [Dependency] private readonly ItemSlotsSystem _itemSlots = default!;
+    [Dependency] private readonly DeviceLinkSystem _deviceLink = default!;
 
     public override void Initialize()
     {
@@ -32,10 +37,46 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
         SubscribeLocalEvent<NuclearReactorComponent, EntInsertedIntoContainerMessage>(OnRodInserted);
         SubscribeLocalEvent<NuclearReactorComponent, EntRemovedFromContainerMessage>(OnRodRemoved);
         SubscribeLocalEvent<NuclearReactorComponent, InteractUsingEvent>(OnInteractUsing);
+        SubscribeLocalEvent<NuclearReactorComponent, MapInitEvent>(OnMapInit);
+        SubscribeLocalEvent<NuclearReactorComponent, AfterInteractUsingEvent>(OnAfterInteractUsing); // ЭТА СТРОКА ДОЛЖНА БЫТЬ
+    }
+
+    private void OnMapInit(EntityUid uid, NuclearReactorComponent comp, MapInitEvent args)
+    {
+        // Регистрируем порт источника для линковки с консолью
+        _deviceLink.EnsureSourcePorts(uid, comp.LinkSourcePort);
+    }
+
+    private void OnAfterInteractUsing(EntityUid uid, NuclearReactorComponent comp, AfterInteractUsingEvent args)
+    {
+        if (args.Handled || args.Target == null)
+            return;
+
+        var toolSystem = EntityManager.System<SharedToolSystem>();
+        if (!toolSystem.HasQuality(args.Used, "Pulsing"))
+            return;
+
+        // Проверяем, что цель - консоль управления реактором
+        if (!TryComp<NuclearReactorConsoleComponent>(args.Target, out var consoleComp))
+            return;
+
+        // Отправляем сигнал линковки через DeviceLink
+        _deviceLink.InvokePort(uid, comp.LinkSourcePort);
+
+        _popup.PopupEntity(Loc.GetString("nuclear-reactor-console-link-success"), uid, args.User);
+        args.Handled = true;
     }
 
     private void OnInit(EntityUid uid, NuclearReactorComponent comp, ComponentInit args)
     {
+        var whitelist = new EntityWhitelist();
+        whitelist.Components = new[] { "UraniumRod" };
+
+        comp.RodSlot1.Whitelist = whitelist;
+        comp.RodSlot2.Whitelist = whitelist;
+        comp.RodSlot3.Whitelist = whitelist;
+        comp.RodSlot4.Whitelist = whitelist;
+
         _itemSlots.AddItemSlot(uid, NuclearReactorComponent.RodSlot1Id, comp.RodSlot1);
         _itemSlots.AddItemSlot(uid, NuclearReactorComponent.RodSlot2Id, comp.RodSlot2);
         _itemSlots.AddItemSlot(uid, NuclearReactorComponent.RodSlot3Id, comp.RodSlot3);
@@ -54,6 +95,10 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
     private void OnInteractUsing(EntityUid uid, NuclearReactorComponent comp, InteractUsingEvent args)
     {
         if (args.Handled)
+            return;
+
+        var toolSystem = EntityManager.System<SharedToolSystem>();
+        if (toolSystem.HasQuality(args.Used, "Pulsing"))
             return;
 
         if (!TryComp<UraniumRodComponent>(args.Used, out _))
@@ -225,10 +270,6 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
 
     protected override void UpdateUI(EntityUid uid, NuclearReactorComponent comp)
     {
-        var uiSystem = EntityManager.System<SharedUserInterfaceSystem>();
-        if (!uiSystem.IsUiOpen(uid, NuclearReactorUiKey.Key))
-            return;
-
         var slots = new ContainerInfo[4];
         slots[0] = GetSlotInfo(comp.RodSlot1.Item);
         slots[1] = GetSlotInfo(comp.RodSlot2.Item);
@@ -252,9 +293,24 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
             GetAnyDepleted(slots)
         );
 
-        uiSystem.SetUiState(uid, NuclearReactorUiKey.Key, state);
-    }
+        // Всегда отправляем обновление на консоли, даже если UI реактора не открыт
+        var consoleQuery = EntityQueryEnumerator<NuclearReactorConsoleComponent>();
+        while (consoleQuery.MoveNext(out var consoleUid, out var consoleComp))
+        {
+            if (consoleComp.LinkedReactor == uid)
+            {
+                var consoleSys = EntityManager.System<SharedNuclearReactorConsoleSystem>();
+                consoleSys.UpdateFromReactor(consoleUid, consoleComp, state);
+            }
+        }
 
+        // Отправляем обновление на UI реактора, только если он открыт
+        var uiSystem = EntityManager.System<SharedUserInterfaceSystem>();
+        if (uiSystem.IsUiOpen(uid, NuclearReactorUiKey.Key))
+        {
+            uiSystem.SetUiState(uid, NuclearReactorUiKey.Key, state);
+        }
+    }
     private bool GetAnyDepleted(ContainerInfo[] slots)
     {
         foreach (var slot in slots)
@@ -288,6 +344,11 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
         _itemSlots.SetLock(uid, comp.RodSlot2, comp.Enabled);
         _itemSlots.SetLock(uid, comp.RodSlot3, comp.Enabled);
         _itemSlots.SetLock(uid, comp.RodSlot4, comp.Enabled);
+
+        // Управление радиацией через RadiationSystem
+        var radiationSystem = EntityManager.System<RadiationSystem>();
+        radiationSystem.SetSourceEnabled(uid, comp.Enabled);
+
         UpdateUI(uid, comp);
     }
 

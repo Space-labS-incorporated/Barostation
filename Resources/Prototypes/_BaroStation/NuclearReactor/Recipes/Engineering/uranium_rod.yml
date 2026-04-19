@@ -1,8 +1,0 @@
-- type: latheRecipe
-  id: UraniumRod
-  result: UraniumRod
-  category: Parts
-  completetime: 5
-  materials:
-    Uranium: 2000
-    Steel: 500

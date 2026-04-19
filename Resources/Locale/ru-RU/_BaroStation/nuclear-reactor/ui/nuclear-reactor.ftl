@@ -23,3 +23,6 @@ nuclear-reactor-mode-optimal = Оптимальный режим ({$min} - {$max
 
 nuclear-reactor-full = Реактор заполнен! Нет свободных слотов для стержней.
 nuclear-reactor-overheat-warning = Реактор перегревается!
+
+nuclear-reactor-slot-empty-line1 = Слот { $slot }
+nuclear-reactor-slot-empty-line2 = (Пусто)

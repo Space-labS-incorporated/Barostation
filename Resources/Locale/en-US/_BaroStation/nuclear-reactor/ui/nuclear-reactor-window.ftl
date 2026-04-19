@@ -23,3 +23,7 @@ nuclear-reactor-mode-optimal = Optimal Mode ({$min} - {$max} K)
 
 nuclear-reactor-full = Reactor is full! No free slots for fuel rods.
 nuclear-reactor-overheat-warning = Reactor is overheating!
+nuclear-reactor-link-source-port = Reactor Link Source
+nuclear-reactor-link-port = Console Link
+nuclear-reactor-link-source-port-desc = Sends a signal to link the console.
+nuclear-reactor-link-port-desc = Receives a signal to link the console to the reactor.

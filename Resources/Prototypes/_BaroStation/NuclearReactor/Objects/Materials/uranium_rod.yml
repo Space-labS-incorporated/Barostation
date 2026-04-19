@@ -20,3 +20,20 @@
   - type: Tag
     tags:
     - UraniumRod
+  - type: RadiationSource
+    intensity: 1
+
+- type: latheRecipe
+  id: UraniumRod
+  result: UraniumRod
+  completetime: 5
+  materials:
+    Uranium: 1500
+    Steel: 100
+  categories:
+  - Materials
+
+- type: latheRecipePack
+  id: UraniumRodPack
+  recipes:
+  - UraniumRod

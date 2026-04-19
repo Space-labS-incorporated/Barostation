@@ -1,0 +1,17 @@
+nuclear-reactor-console-not-linked-overlay = Консоль не привязана к реактору!
+nuclear-reactor-console-window-title = Консоль ядерного реактора
+nuclear-reactor-console-link-status = Связь:
+nuclear-reactor-console-not-linked = НЕ СВЯЗАНА
+nuclear-reactor-console-linked = СВЯЗАНА
+nuclear-reactor-console-clear-link = Очистить связь
+nuclear-reactor-console-no-power = Консоль не получает питание!
+nuclear-reactor-console-no-power-short = НЕТ ПИТАНИЯ
+nuclear-reactor-console-no-reactor-short = НЕТ РЕАКТОРА
+nuclear-reactor-console-no-reactor = Консоль не связана с реактором! Используйте мультитул для связи.
+nuclear-reactor-console-link-fail = Это не ядерный реактор!
+nuclear-reactor-console-link-success = Консоль успешно связана с реактором.
+nuclear-reactor-rod = Стержень
+nuclear-reactor-link-source-port = Источник связи реактора
+nuclear-reactor-link-port = Порт связи консоли
+nuclear-reactor-link-source-port-desc = Отправляет сигнал для связи с консолью.
+nuclear-reactor-link-port-desc = Принимает сигнал для связи консоли с реактором.

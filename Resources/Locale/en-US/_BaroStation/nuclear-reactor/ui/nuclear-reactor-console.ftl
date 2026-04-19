@@ -1,0 +1,15 @@
+nuclear-reactor-console-not-linked-overlay = Console not linked to reactor!
+nuclear-reactor-console-window-title = Nuclear Reactor Console
+nuclear-reactor-console-link-status = Link:
+nuclear-reactor-console-not-linked = NOT LINKED
+nuclear-reactor-console-linked = LINKED
+nuclear-reactor-console-clear-link = Clear Link
+nuclear-reactor-console-no-power = Console has no power!
+nuclear-reactor-console-no-power-short = NO POWER
+nuclear-reactor-console-no-reactor-short = NO REACTOR
+nuclear-reactor-console-no-reactor = Console is not linked to a reactor! Use a multitool to link.
+nuclear-reactor-console-link-fail = This is not a nuclear reactor!
+nuclear-reactor-console-link-success = Console successfully linked to reactor.
+nuclear-reactor-rod = Rod
+nuclear-reactor-slot-empty-line1 = Slot { $slot }
+nuclear-reactor-slot-empty-line2 = (Empty)
