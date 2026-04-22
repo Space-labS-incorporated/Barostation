@@ -15,9 +15,6 @@ public sealed partial class NuclearReactorConsoleComponent : Component
     [DataField("lastReactorState"), AutoNetworkedField, ViewVariables(VVAccess.ReadWrite)]
     public NuclearReactorUiState? LastReactorState;
 
-    /// <summary>
-    /// Порт для получения сигнала линковки от реактора.
-    /// </summary>
     [DataField]
     public ProtoId<SinkPortPrototype> LinkPort = "NuclearReactorLink";
 }
@@ -73,9 +70,6 @@ public sealed class NuclearReactorConsoleUiState : BoundUserInterfaceState
     }
 }
 
-/// <summary>
-/// Сообщение для линковки консоли с реактором.
-/// </summary>
 [Serializable, NetSerializable]
 public sealed class NuclearReactorConsoleLinkMessage : BoundUserInterfaceMessage
 {

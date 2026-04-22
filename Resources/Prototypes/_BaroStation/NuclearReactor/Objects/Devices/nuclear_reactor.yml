@@ -60,7 +60,8 @@
       - !type:DoActsBehavior
         acts: ["Destruction"]
       - !type:PlaySoundBehavior
-        sound: /Audio/Effects/metalbreak.ogg
+        sound:
+          path: /Audio/Effects/explosion1.ogg
 
   - type: NodeContainer
     examinable: true
@@ -84,6 +85,7 @@
 
   - type: RadiationSource
     intensity: 1
+    slope: 0.15
     enabled: false
 
 - type: sourcePort

@@ -15,6 +15,7 @@ public sealed partial class NuclearReactorWindow : DefaultWindow
     public event Action<float>? SetTemperature;
     public event Action<int>? EjectRod;
     public event Action<int>? SetCoolingLevel;
+    private bool _isTargetTempFocused;
 
     private readonly SlotButton[] _slotButtons = new SlotButton[4];
     private NuclearReactorUiState? _lastState;
@@ -22,6 +23,9 @@ public sealed partial class NuclearReactorWindow : DefaultWindow
     public NuclearReactorWindow()
     {
         RobustXamlLoader.Load(this);
+
+        TargetTempInput.OnFocusEnter += _ => _isTargetTempFocused = true;
+        TargetTempInput.OnFocusExit += _ => _isTargetTempFocused = false;
 
         ToggleButton.OnPressed += _ => ToggleReactor?.Invoke(!(_lastState?.Enabled ?? false));
         SetTempButton.OnPressed += _ =>
@@ -33,13 +37,19 @@ public sealed partial class NuclearReactorWindow : DefaultWindow
         {
             var newLevel = (_lastState?.CoolingLevel ?? 1) - 1;
             if (newLevel >= 1)
+            {
                 SetCoolingLevel?.Invoke(newLevel);
+                CoolingLevelLabel.Text = newLevel.ToString();
+            }
         };
         CoolingUpButton.OnPressed += _ =>
         {
             var newLevel = (_lastState?.CoolingLevel ?? 1) + 1;
             if (newLevel <= 8)
+            {
                 SetCoolingLevel?.Invoke(newLevel);
+                CoolingLevelLabel.Text = newLevel.ToString();
+            }
         };
 
         for (int i = 0; i < 4; i++)
@@ -63,10 +73,10 @@ public sealed partial class NuclearReactorWindow : DefaultWindow
         ToggleButton.Text = state.Enabled
             ? Loc.GetString("nuclear-reactor-window-toggle-off")
             : Loc.GetString("nuclear-reactor-window-toggle-on");
-        TargetTempInput.Editable = !state.Enabled;
-        SetTempButton.Disabled = state.Enabled;
-        CoolingDownButton.Disabled = state.Enabled || state.CoolingLevel <= 1;
-        CoolingUpButton.Disabled = state.Enabled || state.CoolingLevel >= 8;
+        TargetTempInput.Editable = true;
+        SetTempButton.Disabled = false;
+        CoolingDownButton.Disabled = state.CoolingLevel <= 1;
+        CoolingUpButton.Disabled = state.CoolingLevel >= 8;
 
         int activeRodCount = 0;
         foreach (var slot in state.RodSlots)
@@ -74,6 +84,13 @@ public sealed partial class NuclearReactorWindow : DefaultWindow
 
         OptimalTempLabel.Text = $"{activeRodCount * 1000f:F0} K";
         DepletedWarningLabel.Visible = state.HasDepletedRod;
+
+        if (!_isTargetTempFocused)
+        {
+            TargetTempInput.Text = state.TargetTemperature.ToString("F0");
+        }
+
+        CoolingLevelLabel.Text = state.CoolingLevel.ToString();
 
         if (activeRodCount == 0)
         {
@@ -104,8 +121,6 @@ public sealed partial class NuclearReactorWindow : DefaultWindow
 
         TemperatureLabel.Text = $"{state.CurrentTemperature:F1} K";
         TemperatureBar.Value = state.CurrentTemperature;
-        TargetTempInput.Text = state.TargetTemperature.ToString("F0");
-        CoolingLevelLabel.Text = state.CoolingLevel.ToString();
         PowerLabel.Text = $"{state.PowerOutput / 1000f:F1} kW";
 
         IntegrityLabel.Text = $"{state.Integrity:F0}%";

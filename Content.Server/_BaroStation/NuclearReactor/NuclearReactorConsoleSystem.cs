@@ -23,23 +23,29 @@ public sealed class NuclearReactorConsoleSystem : SharedNuclearReactorConsoleSys
         SubscribeLocalEvent<NuclearReactorConsoleComponent, MapInitEvent>(OnMapInit);
         SubscribeLocalEvent<NuclearReactorConsoleComponent, SignalReceivedEvent>(OnSignalReceived);
         SubscribeLocalEvent<NuclearReactorConsoleComponent, NewLinkEvent>(OnNewLink);
-
-        // Добавляем прямую обработку сообщений от UI консоли
+        SubscribeLocalEvent<NuclearReactorConsoleComponent, EntityTerminatingEvent>(OnReactorDeleted);
         SubscribeLocalEvent<NuclearReactorConsoleComponent, NuclearReactorToggleMessage>(OnToggleMessageFromConsole);
         SubscribeLocalEvent<NuclearReactorConsoleComponent, NuclearReactorSetTemperatureMessage>(OnSetTempMessageFromConsole);
         SubscribeLocalEvent<NuclearReactorConsoleComponent, NuclearReactorEjectMessage>(OnEjectMessageFromConsole);
         SubscribeLocalEvent<NuclearReactorConsoleComponent, NuclearReactorSetCoolingMessage>(OnSetCoolingMessageFromConsole);
     }
 
+    private void OnReactorDeleted(EntityUid uid, NuclearReactorConsoleComponent comp, ref EntityTerminatingEvent args)
+    {
+        if (comp.LinkedReactor == args.Entity.Owner)
+        {
+            comp.LinkedReactor = null;
+            Dirty(uid, comp);
+            UpdateConsoleUi(uid, comp);
+        }
+    }
+
     private void OnToggleMessageFromConsole(EntityUid uid, NuclearReactorConsoleComponent comp, NuclearReactorToggleMessage args)
     {
         if (comp.LinkedReactor is { Valid: true } reactor)
         {
-            // Отправляем сообщение на реактор
             var toggleMsg = new NuclearReactorToggleMessage();
             RaiseLocalEvent(reactor, toggleMsg);
-
-            // Обновляем UI консоли
             UpdateConsoleUi(uid, comp);
         }
     }
@@ -81,7 +87,6 @@ public sealed class NuclearReactorConsoleSystem : SharedNuclearReactorConsoleSys
 
     private void OnNewLink(EntityUid uid, NuclearReactorConsoleComponent comp, NewLinkEvent args)
     {
-        Log.Info($"NewLinkEvent received! Sink: {args.Sink}, Source: {args.Source}, SourcePort: {args.SourcePort}, SinkPort: {args.SinkPort}");
 
         if (args.Sink != uid)
             return;
@@ -92,7 +97,6 @@ public sealed class NuclearReactorConsoleSystem : SharedNuclearReactorConsoleSys
 
         comp.LinkedReactor = reactor;
         Dirty(uid, comp);
-        Log.Info($"Linked reactor {reactor} to console {uid}");
 
         if (args.User != null)
             _popup.PopupEntity(Loc.GetString("nuclear-reactor-console-link-success"), uid, args.User.Value, PopupType.Medium);
@@ -134,9 +138,14 @@ public sealed class NuclearReactorConsoleSystem : SharedNuclearReactorConsoleSys
         if (!_ui.IsUiOpen(uid, NuclearReactorConsoleUiKey.Key))
             return;
 
+        if (comp.LinkedReactor != null && !EntityManager.EntityExists(comp.LinkedReactor.Value))
+        {
+            comp.LinkedReactor = null;
+            Dirty(uid, comp);
+        }
+
         if (comp.LinkedReactor == null || !TryComp<NuclearReactorComponent>(comp.LinkedReactor, out var reactor))
         {
-            // Отправляем состояние "нет реактора"
             var emptyState = new NuclearReactorConsoleUiState(
                 hasReactor: false,
                 reactorEnabled: false,
@@ -155,9 +164,7 @@ public sealed class NuclearReactorConsoleSystem : SharedNuclearReactorConsoleSys
             return;
         }
 
-        // Получаем актуальное состояние реактора
         var power = TryComp<PowerSupplierComponent>(comp.LinkedReactor, out var supplier) ? supplier.CurrentSupply : 0f;
-
         var slots = new ContainerInfo[4];
         slots[0] = GetSlotInfo(reactor.RodSlot1.Item);
         slots[1] = GetSlotInfo(reactor.RodSlot2.Item);

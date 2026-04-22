@@ -25,12 +25,12 @@ public sealed partial class NuclearReactorConsoleWindow : DefaultWindow
     private NuclearReactorConsoleUiState? _lastState;
     private PanelContainer _overlayPanel = null!;
     private Label _overlayLabel = null!;
+    private bool _isTargetTempFocused;
 
     public NuclearReactorConsoleWindow()
     {
         RobustXamlLoader.Load(this);
 
-        // Создаём оверлей программно
         CreateOverlay();
 
         ToggleButton.OnPressed += _ => ToggleReactor?.Invoke(!(_lastState?.ReactorEnabled ?? false));
@@ -43,14 +43,23 @@ public sealed partial class NuclearReactorConsoleWindow : DefaultWindow
         {
             var newLevel = (_lastState?.CoolingLevel ?? 1) - 1;
             if (newLevel >= 1)
+            {
                 SetCoolingLevel?.Invoke(newLevel);
+                CoolingLevelLabel.Text = newLevel.ToString();
+            }
         };
         CoolingUpButton.OnPressed += _ =>
         {
             var newLevel = (_lastState?.CoolingLevel ?? 1) + 1;
             if (newLevel <= 8)
+            {
                 SetCoolingLevel?.Invoke(newLevel);
+                CoolingLevelLabel.Text = newLevel.ToString();
+            }
         };
+
+        TargetTempInput.OnFocusEnter += _ => _isTargetTempFocused = true;
+        TargetTempInput.OnFocusExit += _ => _isTargetTempFocused = false;
 
         for (int i = 0; i < 4; i++)
         {
@@ -67,12 +76,12 @@ public sealed partial class NuclearReactorConsoleWindow : DefaultWindow
         {
             Name = "OverlayPanel",
             Visible = false,
-            MouseFilter = Control.MouseFilterMode.Ignore  // <- Игнорируем клики на оверлее
+            MouseFilter = Control.MouseFilterMode.Ignore
         };
 
         var styleBox = new StyleBoxFlat
         {
-            BackgroundColor = new Color(0, 0, 0, 0.5f) // #80000000
+            BackgroundColor = new Color(0, 0, 0, 0.5f)
         };
         _overlayPanel.PanelOverride = styleBox;
 
@@ -82,23 +91,19 @@ public sealed partial class NuclearReactorConsoleWindow : DefaultWindow
             FontColorOverride = Color.White,
             HorizontalAlignment = HAlignment.Center,
             VerticalAlignment = VAlignment.Center,
-            MouseFilter = Control.MouseFilterMode.Ignore  // <- И текст игнорирует клики
+            MouseFilter = Control.MouseFilterMode.Ignore
         };
         _overlayPanel.AddChild(_overlayLabel);
 
         AddChild(_overlayPanel);
         _overlayPanel.SetPositionLast();
 
-        // Растягиваем оверлей на всё окно
         LayoutContainer.SetAnchorLeft(_overlayPanel, 0);
         LayoutContainer.SetAnchorRight(_overlayPanel, 1);
         LayoutContainer.SetAnchorTop(_overlayPanel, 0);
         LayoutContainer.SetAnchorBottom(_overlayPanel, 1);
-
-        // Отступ сверху (только визуальный, клики всё равно проходят)
         LayoutContainer.SetMarginTop(_overlayPanel, 30);
 
-        // Центрируем текст
         LayoutContainer.SetAnchorLeft(_overlayLabel, 0.5f);
         LayoutContainer.SetAnchorRight(_overlayLabel, 0.5f);
         LayoutContainer.SetAnchorTop(_overlayLabel, 0.5f);
@@ -120,12 +125,8 @@ public sealed partial class NuclearReactorConsoleWindow : DefaultWindow
 
         MainContent.Visible = true;
         _overlayPanel.Visible = false;
+     _lastState = state;
 
-        try
-        {
-            _lastState = state;
-
-            // Проверка на null
             if (RodsGrid == null || StatusLabel == null ||
                 ToggleButton == null || StateLabel == null || OptimalTempLabel == null ||
                 TemperatureLabel == null || TemperatureBar == null || TargetTempInput == null ||
@@ -133,20 +134,17 @@ public sealed partial class NuclearReactorConsoleWindow : DefaultWindow
                 CoolingLevelLabel == null || PowerLabel == null || IntegrityLabel == null ||
                 DepletedWarningLabel == null || WarningLabel == null)
             {
-                Logger.Error("XAML not loaded properly - exiting UpdateState");
                 return;
             }
 
             var hasControl = state.HasPower && state.HasReactor;
 
-            // Управление
             ToggleButton.Disabled = !hasControl;
+            TargetTempInput.Editable = hasControl;
             SetTempButton.Disabled = !hasControl;
-            TargetTempInput.Editable = hasControl && !state.ReactorEnabled;
-            CoolingDownButton.Disabled = !hasControl || state.ReactorEnabled || state.CoolingLevel <= 1;
-            CoolingUpButton.Disabled = !hasControl || state.ReactorEnabled || state.CoolingLevel >= 8;
+            CoolingDownButton.Disabled = !hasControl || state.CoolingLevel <= 1;
+            CoolingUpButton.Disabled = !hasControl || state.CoolingLevel >= 8;
 
-            // Статус
             if (!hasControl)
                 StatusLabel.Text = !state.HasReactor
                     ? Loc.GetString("nuclear-reactor-console-no-reactor-short")
@@ -160,7 +158,6 @@ public sealed partial class NuclearReactorConsoleWindow : DefaultWindow
                 ? Loc.GetString("nuclear-reactor-window-toggle-off")
                 : Loc.GetString("nuclear-reactor-window-toggle-on");
 
-            // Подсчёт активных стержней
             int activeRodCount = 0;
             foreach (var slot in state.RodSlots)
                 if (slot.HasItem && !slot.Depleted) activeRodCount++;
@@ -168,7 +165,6 @@ public sealed partial class NuclearReactorConsoleWindow : DefaultWindow
             OptimalTempLabel.Text = $"{activeRodCount * 1000f:F0} K";
             DepletedWarningLabel.Visible = state.HasDepletedRod;
 
-            // Режим работы
             if (activeRodCount == 0)
             {
                 StateLabel.Text = Loc.GetString("nuclear-reactor-mode-no-rods");
@@ -196,14 +192,17 @@ public sealed partial class NuclearReactorConsoleWindow : DefaultWindow
                 }
             }
 
-            // Данные
             TemperatureLabel.Text = $"{state.CurrentTemperature:F1} K";
             TemperatureBar.Value = state.CurrentTemperature;
-            TargetTempInput.Text = state.TargetTemperature.ToString("F0");
+
+            if (!_isTargetTempFocused)
+            {
+                TargetTempInput.Text = state.TargetTemperature.ToString("F0");
+            }
+
             CoolingLevelLabel.Text = state.CoolingLevel.ToString();
             PowerLabel.Text = $"{state.PowerOutput / 1000f:F1} kW";
 
-            // Целостность с цветовой индикацией
             IntegrityLabel.Text = $"{state.Integrity:F0}%";
             if (state.Integrity < 30)
                 IntegrityLabel.SetOnlyStyleClass("LabelDanger");
@@ -212,7 +211,6 @@ public sealed partial class NuclearReactorConsoleWindow : DefaultWindow
             else
                 IntegrityLabel.SetOnlyStyleClass("LabelGood");
 
-            // Обновление слотов стержней
             for (int i = 0; i < 4; i++)
             {
                 if (i < state.RodSlots.Length)
@@ -220,11 +218,6 @@ public sealed partial class NuclearReactorConsoleWindow : DefaultWindow
             }
 
             WarningLabel.Visible = activeRodCount == 0;
-        }
-        catch (Exception ex)
-        {
-            Logger.Error($"Exception in UpdateState: {ex.Message}\n{ex.StackTrace}");
-        }
     }
 
     private sealed class SlotButton : Button
