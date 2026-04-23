@@ -1,0 +1,9 @@
+achievements-clown-mask-name = No one cared who I was...
+achievements-clown-mask-desc = Until I put on the mask
+achievements-earned-label = Earned!
+achievements-window-title = Achievements
+achievements-incomplete-tab-title = Not Earned
+achievements-completed-tab-title = Earned
+achievements-button-text = Achievements
+achievements-toast-title = Achievement Unlocked!
+achievements-reset-button = Reset

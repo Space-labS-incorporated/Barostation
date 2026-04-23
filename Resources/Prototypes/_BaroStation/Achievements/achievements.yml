@@ -1,0 +1,5 @@
+- type: achievement
+  id: ClownMaskAchievement
+  name: achievements-clown-mask-name
+  description: achievements-clown-mask-desc
+  icon: /Textures/_BaroStation/Achievements/clown_mask.png
