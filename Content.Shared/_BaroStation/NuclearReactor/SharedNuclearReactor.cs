@@ -53,7 +53,7 @@ public sealed partial class NuclearReactorComponent : Component
     public float UpdateInterval = 1.0f;
 
     [DataField("meltdownSound")]
-    public SoundSpecifier? MeltdownSound = new SoundPathSpecifier("/Audio/Effects/meltdown.ogg");
+    public SoundSpecifier? MeltdownSound = new SoundPathSpecifier("/Audio/Effects/metal_slam4.ogg");
 
     [DataField("coolingLevel"), ViewVariables(VVAccess.ReadWrite), AutoNetworkedField]
     public int CoolingLevel = 1;
@@ -64,9 +64,18 @@ public sealed partial class NuclearReactorComponent : Component
     [DataField("maxTemperature")]
     public float MaxTemperature = 30000f;
 
-    /// <summary>
-    /// Порт для отправки сигнала линковки на консоль.
-    /// </summary>
+    [DataField("lowIntegritySound")]
+    public SoundSpecifier? LowIntegritySound = new SoundPathSpecifier("/Audio/Effects/alert.ogg");
+
+    [DataField("lowIntegrityThreshold")]
+    public float LowIntegrityThreshold = 50f;
+
+    [DataField("lastLowIntegrityAlert")]
+    public TimeSpan LastLowIntegrityAlert;
+
+    [DataField("lowIntegrityAlertCooldown")]
+    public TimeSpan LowIntegrityAlertCooldown = TimeSpan.FromSeconds(10);
+
     [DataField]
     public ProtoId<SourcePortPrototype> LinkSourcePort = "NuclearReactorLinkSource";
 }

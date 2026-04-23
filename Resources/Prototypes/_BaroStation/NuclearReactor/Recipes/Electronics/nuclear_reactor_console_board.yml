@@ -4,7 +4,7 @@
   result: NuclearReactorConsoleCircuitboard
   completetime: 4
   categories:
-  - Engineering   # <-- Добавьте категорию
+  - Engineering
   materials:
     Glass: 1000
     Steel: 200

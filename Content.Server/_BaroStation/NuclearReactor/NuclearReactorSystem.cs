@@ -16,6 +16,7 @@ using Robust.Server.GameObjects;
 using Robust.Shared.Audio.Systems;
 using Robust.Shared.Containers;
 using Robust.Shared.Random;
+using Robust.Server.Audio;
 using Robust.Shared.Timing;
 
 namespace Content.Server._BaroStation.NuclearReactor;
@@ -27,6 +28,7 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
     [Dependency] private readonly IRobustRandom _random = default!;
     [Dependency] private readonly SharedPopupSystem _popup = default!;
     [Dependency] private readonly ItemSlotsSystem _itemSlots = default!;
+    [Dependency] private readonly AudioSystem _audio = default!;
     [Dependency] private readonly DeviceLinkSystem _deviceLink = default!;
 
     public override void Initialize()
@@ -38,12 +40,11 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
         SubscribeLocalEvent<NuclearReactorComponent, EntRemovedFromContainerMessage>(OnRodRemoved);
         SubscribeLocalEvent<NuclearReactorComponent, InteractUsingEvent>(OnInteractUsing);
         SubscribeLocalEvent<NuclearReactorComponent, MapInitEvent>(OnMapInit);
-        SubscribeLocalEvent<NuclearReactorComponent, AfterInteractUsingEvent>(OnAfterInteractUsing); // ЭТА СТРОКА ДОЛЖНА БЫТЬ
+        SubscribeLocalEvent<NuclearReactorComponent, AfterInteractUsingEvent>(OnAfterInteractUsing);
     }
 
     private void OnMapInit(EntityUid uid, NuclearReactorComponent comp, MapInitEvent args)
     {
-        // Регистрируем порт источника для линковки с консолью
         _deviceLink.EnsureSourcePorts(uid, comp.LinkSourcePort);
     }
 
@@ -56,11 +57,9 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
         if (!toolSystem.HasQuality(args.Used, "Pulsing"))
             return;
 
-        // Проверяем, что цель - консоль управления реактором
         if (!TryComp<NuclearReactorConsoleComponent>(args.Target, out var consoleComp))
             return;
 
-        // Отправляем сигнал линковки через DeviceLink
         _deviceLink.InvokePort(uid, comp.LinkSourcePort);
 
         _popup.PopupEntity(Loc.GetString("nuclear-reactor-console-link-success"), uid, args.User);
@@ -142,9 +141,6 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
 
     protected override void OnSetCoolingMessage(EntityUid uid, NuclearReactorComponent comp, NuclearReactorSetCoolingMessage args)
     {
-        if (comp.Enabled)
-            return;
-
         comp.CoolingLevel = Math.Clamp(args.CoolingLevel, 1, 8);
         UpdateUI(uid, comp);
     }
@@ -225,6 +221,7 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
 
         var generatedPower = comp.MaxPowerOutput * efficiency * (rodCount / 4f);
         supplier.MaxSupply = generatedPower;
+        CheckIntegritySound(uid, comp);
 
         if (comp.Integrity <= 0)
         {
@@ -234,7 +231,17 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
 
         UpdateUI(uid, comp);
     }
-
+    private void CheckIntegritySound(EntityUid uid, NuclearReactorComponent comp)
+    {
+        if (comp.Integrity <= comp.LowIntegrityThreshold && comp.Enabled)
+        {
+            if (_timing.CurTime - comp.LastLowIntegrityAlert > comp.LowIntegrityAlertCooldown)
+            {
+                comp.LastLowIntegrityAlert = _timing.CurTime;
+                _audio.PlayPvs(comp.LowIntegritySound, uid);
+            }
+        }
+    }
     private void CheckRod(EntityUid? rodEntity, ref int rodCount, ref float totalHeatGen, NuclearReactorComponent comp)
     {
         if (rodEntity == null || !TryComp<UraniumRodComponent>(rodEntity, out var rod))
@@ -264,7 +271,74 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
 
     private void Meltdown(EntityUid uid, NuclearReactorComponent comp)
     {
-        _explosion.QueueExplosion(uid, "Default", 200, 5, 10, canCreateVacuum: true);
+        var activeRodCount = 0;
+        if (comp.RodSlot1.Item != null && TryComp<UraniumRodComponent>(comp.RodSlot1.Item, out var rod1) && !rod1.Depleted) activeRodCount++;
+        if (comp.RodSlot2.Item != null && TryComp<UraniumRodComponent>(comp.RodSlot2.Item, out var rod2) && !rod2.Depleted) activeRodCount++;
+        if (comp.RodSlot3.Item != null && TryComp<UraniumRodComponent>(comp.RodSlot3.Item, out var rod3) && !rod3.Depleted) activeRodCount++;
+        if (comp.RodSlot4.Item != null && TryComp<UraniumRodComponent>(comp.RodSlot4.Item, out var rod4) && !rod4.Depleted) activeRodCount++;
+
+        var baseTotalIntensity = 800f;
+        var baseSlope = 16f;
+        var baseMaxTileIntensity = 200f;
+
+        var intensityMult = 1f + (activeRodCount * 2f);
+        var slopeMult = 1f + (activeRodCount * 1.5f);
+        var maxTileMult = 1f + (activeRodCount * 1f);
+
+        var totalIntensity = baseTotalIntensity * intensityMult;
+        var slope = baseSlope * slopeMult;
+        var maxTileIntensity = baseMaxTileIntensity * maxTileMult;
+
+        _explosion.QueueExplosion(
+            uid,
+            "Default",
+            totalIntensity,
+            slope,
+            maxTileIntensity,
+            canCreateVacuum: true
+        );
+
+        if (activeRodCount >= 2)
+        {
+            _explosion.QueueExplosion(
+                uid,
+                "Default",
+                totalIntensity / 2,
+                slope * 0.8f,
+                maxTileIntensity * 0.7f,
+                canCreateVacuum: false
+            );
+        }
+
+        if (activeRodCount >= 4)
+        {
+            _explosion.QueueExplosion(
+                uid,
+                "Default",
+                totalIntensity / 3,
+                slope * 0.6f,
+                maxTileIntensity * 0.5f,
+                canCreateVacuum: false
+            );
+        }
+
+        _audio.PlayPvs(comp.MeltdownSound, uid);
+
+        var radiationSystem = EntityManager.System<RadiationSystem>();
+        if (!TryComp<RadiationSourceComponent>(uid, out var radiationSource))
+        {
+            radiationSource = AddComp<RadiationSourceComponent>(uid);
+        }
+        radiationSystem.SetIntensity((uid, radiationSource), 50f + (activeRodCount * 25f));
+        RemComp<RadiationSourceComponent>(uid);
+
+        var newSource = AddComp<RadiationSourceComponent>(uid);
+        var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public;
+        typeof(RadiationSourceComponent).GetField("_intensity", flags)?.SetValue(newSource, 50f + (activeRodCount * 25f));
+        typeof(RadiationSourceComponent).GetField("_slope", flags)?.SetValue(newSource, 0.15f);
+        typeof(RadiationSourceComponent).GetField("_enabled", flags)?.SetValue(newSource, true);
+
+        radiationSystem.SetSourceEnabled((uid, newSource), true);
         EntityManager.QueueDeleteEntity(uid);
     }
 
@@ -293,7 +367,6 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
             GetAnyDepleted(slots)
         );
 
-        // Всегда отправляем обновление на консоли, даже если UI реактора не открыт
         var consoleQuery = EntityQueryEnumerator<NuclearReactorConsoleComponent>();
         while (consoleQuery.MoveNext(out var consoleUid, out var consoleComp))
         {
@@ -304,7 +377,6 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
             }
         }
 
-        // Отправляем обновление на UI реактора, только если он открыт
         var uiSystem = EntityManager.System<SharedUserInterfaceSystem>();
         if (uiSystem.IsUiOpen(uid, NuclearReactorUiKey.Key))
         {
@@ -345,11 +417,15 @@ public sealed class NuclearReactorSystem : SharedNuclearReactorSystem
         _itemSlots.SetLock(uid, comp.RodSlot3, comp.Enabled);
         _itemSlots.SetLock(uid, comp.RodSlot4, comp.Enabled);
 
-        // Управление радиацией через RadiationSystem
         var radiationSystem = EntityManager.System<RadiationSystem>();
         radiationSystem.SetSourceEnabled(uid, comp.Enabled);
 
         UpdateUI(uid, comp);
+        if (comp.Enabled && comp.Integrity <= comp.LowIntegrityThreshold)
+        {
+            _audio.PlayPvs(comp.LowIntegritySound, uid);
+            comp.LastLowIntegrityAlert = _timing.CurTime;
+        }
     }
 
     protected override void OnSetTemperatureMessage(EntityUid uid, NuclearReactorComponent comp, NuclearReactorSetTemperatureMessage args)

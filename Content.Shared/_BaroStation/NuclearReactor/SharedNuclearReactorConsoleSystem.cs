@@ -13,12 +13,6 @@ public abstract class SharedNuclearReactorConsoleSystem : EntitySystem
 
         SubscribeLocalEvent<NuclearReactorConsoleComponent, NuclearReactorConsoleLinkMessage>(OnLinkMessage);
         SubscribeLocalEvent<NuclearReactorConsoleComponent, NuclearReactorConsoleClearLinkMessage>(OnClearLinkMessage);
-        // SubscribeLocalEvent<NuclearReactorConsoleComponent, NuclearReactorToggleMessage>(OnToggleMessage);
-        //  SubscribeLocalEvent<NuclearReactorConsoleComponent, NuclearReactorSetTemperatureMessage>(OnSetTempMessage);
-        //  SubscribeLocalEvent<NuclearReactorConsoleComponent, NuclearReactorEjectMessage>(OnEjectMessage);
-        //  SubscribeLocalEvent<NuclearReactorConsoleComponent, NuclearReactorSetCoolingMessage>(OnSetCoolingMessage);
-
-        //  SubscribeLocalEvent<NuclearReactorConsoleComponent, AfterInteractUsingEvent>(OnAfterInteractUsing);
     }
 
     private void OnAfterInteractUsing(EntityUid uid, NuclearReactorConsoleComponent comp, AfterInteractUsingEvent args)
