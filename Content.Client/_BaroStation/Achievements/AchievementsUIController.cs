@@ -78,10 +78,8 @@ public sealed class AchievementsUIController : UIController,
         _window = UIManager.CreateWindow<AchievementsWindow>();
         LayoutContainer.SetAnchorPreset(_window, LayoutContainer.LayoutPreset.Center);
 
-        _window.ResetButton.OnPressed += OnResetPressed;
         _window.OnOpen += OnWindowOpened;
 
-        // Если есть кэшированные данные, показываем их при создании окна
         if (_hasCachedData)
         {
             _window.CacheAchievements(_allAchievements, _earnedAchievements);
@@ -133,7 +131,6 @@ public sealed class AchievementsUIController : UIController,
             _sawmill.Info($"  - Earned: {id}");
         }
 
-        // Всегда обновляем окно, если оно существует (даже если закрыто - кэшируем)
         if (_window != null && !_window.Disposed)
         {
             _window.CacheAchievements(_allAchievements, _earnedAchievements);
@@ -190,10 +187,6 @@ public sealed class AchievementsUIController : UIController,
             return;
         }
 
-        _sawmill.Info("Reset achievements request sent");
-        _entityManager.EventBus.RaiseEvent(EventSource.Network, new ResetAchievementsMessage());
-
-        // Очищаем локально для мгновенного UI отклика
         _earnedAchievements.Clear();
         _hasCachedData = true;
 

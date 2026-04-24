@@ -35,12 +35,8 @@ public sealed partial class AchievementEntryControl : BoxContainer
 
         TitleLabel.Text = Loc.GetString(prototype.Name);
         DescriptionLabel.Text = Loc.GetString(prototype.Description);
-
-        // Убеждаемся, что элементы видимы
         TitleLabel.Visible = true;
         DescriptionLabel.Visible = true;
-
-        // Стиль для выполненных и невыполненных достижений
         if (isEarned)
         {
             Modulate = new Color(200, 200, 200);
@@ -49,7 +45,7 @@ public sealed partial class AchievementEntryControl : BoxContainer
         }
         else
         {
-            Modulate = new Color(100, 100, 100, 180); // Полупрозрачный
+            Modulate = new Color(100, 100, 100, 180);
             ToolTip = "Not yet earned";
             AddStyleClass("AchievementLocked");
         }

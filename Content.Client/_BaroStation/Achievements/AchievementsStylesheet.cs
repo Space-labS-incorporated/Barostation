@@ -16,7 +16,6 @@ public static class AchievementsStylesheet
 
         return new Stylesheet(new StyleRule[]
         {
-            // Toast notification style
             Element().Class("BaroToastNotification")
                 .Prop(PanelContainer.StylePropertyPanel, new StyleBoxFlat
                 {
@@ -29,12 +28,10 @@ public static class AchievementsStylesheet
                     ContentMarginBottomOverride = 4,
                 }),
 
-            // Toast title label
             Element<Label>().Class("BaroToastTitle")
                 .Prop("font", notoSansFont12)
                 .Prop("font-color", Color.Gold),
 
-            // Toast achievement name label
             Element<Label>().Class("BaroToastAchievementName")
                 .Prop("font", notoSansFont12)
                 .Prop("font-color", Color.White),

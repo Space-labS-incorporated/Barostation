@@ -26,8 +26,6 @@ public sealed partial class AchievementsWindow : FancyWindow
         RobustXamlLoader.Load(this);
         _entityManager = IoCManager.Resolve<IEntityManager>();
         _sawmill = Logger.GetSawmill("achievements");
-
-        ResetButton.OnPressed += OnResetButtonPressed;
     }
 
     public bool IsDisposed => Disposed;
@@ -44,8 +42,6 @@ public sealed partial class AchievementsWindow : FancyWindow
     public void UpdateAchievements(List<AchievementPrototype> allAchievements, HashSet<string> earnedIds)
     {
         _sawmill.Info($"UpdateAchievements called: Total={allAchievements.Count}, Earned={earnedIds.Count}, IsOpen={IsOpen}");
-
-        // Очищаем списки
         ClearList(EarnedList);
         ClearList(LockedList);
 
@@ -55,8 +51,6 @@ public sealed partial class AchievementsWindow : FancyWindow
             StatsLabel.Text = "No achievements found";
             return;
         }
-
-        // Обновляем статистику
         var earnedCount = earnedIds.Count;
         StatsLabel.Text = $"Achievements: {earnedCount} / {allAchievements.Count}";
 
@@ -73,20 +67,16 @@ public sealed partial class AchievementsWindow : FancyWindow
 
         _sawmill.Info($"Earned: {earnedAchievements.Count}, Locked: {lockedAchievements.Count}");
 
-        // Показываем/скрываем заголовки и разделитель
         EarnedHeader.Visible = earnedAchievements.Any();
         LockedHeader.Visible = lockedAchievements.Any();
         Separator.Visible = earnedAchievements.Any() && lockedAchievements.Any();
 
-        // Добавляем выполненные достижения
         foreach (var proto in earnedAchievements)
         {
             var entry = new AchievementEntryControl(proto, true);
             EarnedList.AddChild(entry);
             _sawmill.Debug($"Added earned achievement: {proto.ID}");
         }
-
-        // Добавляем невыполненные достижения
         foreach (var proto in lockedAchievements)
         {
             var entry = new AchievementEntryControl(proto, false);
@@ -123,18 +113,5 @@ public sealed partial class AchievementsWindow : FancyWindow
             list.RemoveChild(child);
             child.Dispose();
         }
-    }
-
-    private void OnResetButtonPressed(BaseButton.ButtonEventArgs args)
-    {
-        _entityManager.EventBus.RaiseEvent(EventSource.Network, new ResetAchievementsMessage());
-        _sawmill.Info("Reset achievements request sent");
-
-        ClearList(EarnedList);
-        ClearList(LockedList);
-        StatsLabel.Text = "Achievements: 0 / 0";
-        EarnedHeader.Visible = false;
-        LockedHeader.Visible = false;
-        Separator.Visible = false;
     }
 }

@@ -18,8 +18,3 @@ public sealed class AchievementsStateMessage : EntityEventArgs
 {
     public List<string> EarnedIds { get; set; } = new();
 }
-
-[Serializable, NetSerializable]
-public sealed class ResetAchievementsMessage : EntityEventArgs
-{
-}
