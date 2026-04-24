@@ -19,6 +19,7 @@ namespace Content.Server.Database
         }
 
         public DbSet<Preference> Preference { get; set; } = null!;
+        public DbSet<AchievementPlayer> AchievementPlayers { get; set; } = null!; // BaroStation
         public DbSet<Profile> Profile { get; set; } = null!;
         public DbSet<AssignedUserId> AssignedUserId { get; set; } = null!;
         public DbSet<Player> Player { get; set; } = default!;

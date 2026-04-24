@@ -1,0 +1,17 @@
+<PanelContainer xmlns="https://spacestation14.io"
+                xmlns:graphics="clr-namespace:Robust.Client.Graphics;assembly=Robust.Client"
+                StyleClasses="BaroToastNotification"
+                MinWidth="250" MaxWidth="400"
+                MinHeight="60" MaxHeight="100">
+    <PanelContainer.PanelOverride>
+        <graphics:StyleBoxFlat BackgroundColor="#25252ADD"
+                               BorderThickness="2"
+                               BorderColor="#447044"/>
+    </PanelContainer.PanelOverride>
+    <BoxContainer Orientation="Horizontal" Margin="10" SeparationOverride="10">
+        <BoxContainer Orientation="Vertical" HorizontalExpand="True">
+            <Label Name="TitleLabel" StyleClasses="BaroToastTitle" Text="{Loc 'achievements-toast-title'}"/>
+            <Label Name="AchievementNameLabel" StyleClasses="BaroToastAchievementName"/>
+        </BoxContainer>
+    </BoxContainer>
+</PanelContainer>
