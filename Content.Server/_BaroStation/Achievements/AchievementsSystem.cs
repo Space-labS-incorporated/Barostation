@@ -1,13 +1,16 @@
+using Content.Server.Database; // ДОБАВЛЕНО
+using Content.Server.GameTicking;
 using Content.Shared._BaroStation.Achievements;
 using Content.Shared.GameTicking;
 using Content.Shared.Inventory;
 using Content.Shared.Inventory.Events;
 using Robust.Shared.Console;
+using Robust.Shared.Network;
 using Robust.Shared.Player;
 using Robust.Shared.Prototypes;
-using System.Linq;
-using Content.Server.GameTicking;
 using Robust.Shared.Timing;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Content.Server._BaroStation.Achievements;
 
@@ -17,6 +20,7 @@ public sealed class AchievementsSystem : EntitySystem
     [Dependency] private readonly IConsoleHost _consoleHost = default!;
     [Dependency] private readonly ISharedPlayerManager _playerManager = default!;
     [Dependency] private readonly ILogManager _logManager = default!;
+    [Dependency] private readonly IServerDbManager _dbManager = default!; // ДОБАВЛЕНО
 
     private ISawmill _sawmill = default!;
     private readonly Dictionary<string, HashSet<string>> _playerAchievements = new();
@@ -53,14 +57,18 @@ public sealed class AchievementsSystem : EntitySystem
             return;
         }
 
-        var userId = session.UserId.ToString();
-        if (_playerAchievements.ContainsKey(userId))
+        var userId = session.UserId;
+
+        // Удаляем из БД асинхронно
+        _ = _dbManager.RemoveAllPlayerAchievementsAsync(userId);
+
+        if (_playerAchievements.ContainsKey(userId.ToString()))
         {
-            _playerAchievements[userId].Clear();
+            _playerAchievements[userId.ToString()].Clear();
         }
         else
         {
-            _playerAchievements[userId] = new HashSet<string>();
+            _playerAchievements[userId.ToString()] = new HashSet<string>();
         }
 
         if (TryComp<PlayerAchievementsComponent>(playerEntity, out var comp))
@@ -72,7 +80,6 @@ public sealed class AchievementsSystem : EntitySystem
         shell.WriteLine($"Reset all achievements for {username}");
         _sawmill.Info($"Reset achievements for {username}");
 
-        // Отправляем обновлённое состояние игроку
         var stateMsg = new AchievementsStateMessage { EarnedIds = new List<string>() };
         RaiseNetworkEvent(stateMsg, session);
     }
@@ -171,23 +178,33 @@ public sealed class AchievementsSystem : EntitySystem
 
     private void OnPlayerSpawnComplete(PlayerSpawnCompleteEvent ev)
     {
-        var userId = ev.Player.UserId.ToString();
+        var userId = ev.Player.UserId;
+        // Загружаем из БД асинхронно
+        _ = LoadAndApplyAchievementsAsync(ev.Player, ev.Mob, userId);
+    }
 
-        if (!_playerAchievements.TryGetValue(userId, out var saved))
+    private async Task LoadAndApplyAchievementsAsync(ICommonSession session, EntityUid mob, NetUserId userId)
+    {
+        try
         {
-            saved = new HashSet<string>();
-            _playerAchievements[userId] = saved;
+            var earnedIds = await _dbManager.GetPlayerAchievementsAsync(userId);
+            var earnedSet = new HashSet<string>(earnedIds);
+
+            _playerAchievements[userId.ToString()] = earnedSet;
+
+            var achievementComp = EnsureComp<PlayerAchievementsComponent>(mob);
+            achievementComp.EarnedAchievements = earnedSet;
+            Dirty(mob, achievementComp);
+
+            _sawmill.Info($"Loaded {earnedSet.Count} achievements for player {session.Name} from DB");
+
+            var stateMsg = new AchievementsStateMessage { EarnedIds = earnedIds };
+            RaiseNetworkEvent(stateMsg, session);
         }
-
-        var achievementComp = EnsureComp<PlayerAchievementsComponent>(ev.Mob);
-        achievementComp.EarnedAchievements = saved;
-        Dirty(ev.Mob, achievementComp);
-
-        _sawmill.Info($"Loaded achievements for player {ev.Player.Name}: {saved.Count} achievements");
-
-        // Отправляем состояние сразу после спавна
-        var stateMsg = new AchievementsStateMessage { EarnedIds = saved.ToList() };
-        RaiseNetworkEvent(stateMsg, ev.Player);
+        catch (Exception ex)
+        {
+            _sawmill.Error($"Failed to load achievements for {session.Name}: {ex}");
+        }
     }
 
     private void OnDidEquip(EntityUid uid, InventoryComponent component, DidEquipEvent args)
@@ -225,18 +242,21 @@ public sealed class AchievementsSystem : EntitySystem
 
         if (TryComp<ActorComponent>(player, out var actor))
         {
-            var userId = actor.PlayerSession.UserId.ToString();
-            if (!_playerAchievements.ContainsKey(userId))
-                _playerAchievements[userId] = new HashSet<string>();
+            var userId = actor.PlayerSession.UserId;
 
-            _playerAchievements[userId].Add(achievementId);
+            // Сохраняем в БД асинхронно
+            _ = _dbManager.AddPlayerAchievementAsync(userId, achievementId);
+
+            if (!_playerAchievements.ContainsKey(userId.ToString()))
+                _playerAchievements[userId.ToString()] = new HashSet<string>();
+
+            _playerAchievements[userId.ToString()].Add(achievementId);
 
             _sawmill.Info($"Granted achievement {achievementId} to player {actor.PlayerSession.Name}");
 
             var msg = new AchievementEarnedMessage { AchievementId = achievementId };
             RaiseNetworkEvent(msg, actor.PlayerSession);
 
-            // Отправляем обновлённое состояние
             var stateMsg = new AchievementsStateMessage { EarnedIds = achievementComp.EarnedAchievements.ToList() };
             RaiseNetworkEvent(stateMsg, actor.PlayerSession);
         }
@@ -254,24 +274,36 @@ public sealed class AchievementsSystem : EntitySystem
             return;
         }
 
-        if (!TryComp<PlayerAchievementsComponent>(player.AttachedEntity, out var achievementComp))
+        // Загружаем из БД асинхронно
+        _ = LoadAndSendAchievementsAsync(player, player.AttachedEntity.Value);
+    }
+
+    private async Task LoadAndSendAchievementsAsync(ICommonSession session, EntityUid playerEntity)
+    {
+        try
         {
-            _sawmill.Info($"Creating new PlayerAchievementsComponent for {player.Name}");
-            achievementComp = AddComp<PlayerAchievementsComponent>(player.AttachedEntity.Value);
-        }
+            var earnedIds = await _dbManager.GetPlayerAchievementsAsync(session.UserId);
+            var earnedSet = new HashSet<string>(earnedIds);
 
-        var userId = player.UserId.ToString();
-        if (_playerAchievements.TryGetValue(userId, out var saved) && saved.Count > 0)
+            _playerAchievements[session.UserId.ToString()] = earnedSet;
+
+            if (!TryComp<PlayerAchievementsComponent>(playerEntity, out var achievementComp))
+            {
+                achievementComp = AddComp<PlayerAchievementsComponent>(playerEntity);
+            }
+
+            achievementComp.EarnedAchievements = earnedSet;
+            Dirty(playerEntity, achievementComp);
+
+            var stateMsg = new AchievementsStateMessage { EarnedIds = earnedIds };
+            RaiseNetworkEvent(stateMsg, session);
+
+            _sawmill.Info($"Sent {earnedIds.Count} achievements to {session.Name} from DB");
+        }
+        catch (Exception ex)
         {
-            achievementComp.EarnedAchievements = saved;
-            Dirty(player.AttachedEntity.Value, achievementComp);
+            _sawmill.Error($"Failed to send achievements to {session.Name}: {ex}");
         }
-
-        var earnedIds = achievementComp.EarnedAchievements.ToList();
-        _sawmill.Info($"Sending achievements to {player.Name}: {earnedIds.Count} achievements - {string.Join(", ", earnedIds)}");
-
-        var stateMsg = new AchievementsStateMessage { EarnedIds = earnedIds };
-        RaiseNetworkEvent(stateMsg, player);
     }
 
     private void OnResetAchievements(ResetAchievementsMessage msg, EntitySessionEventArgs args)
@@ -286,12 +318,16 @@ public sealed class AchievementsSystem : EntitySystem
             return;
         }
 
-        var userId = player.UserId.ToString();
-        if (!_playerAchievements.ContainsKey(userId))
+        var userId = player.UserId;
+
+        // Удаляем из БД асинхронно
+        _ = _dbManager.RemoveAllPlayerAchievementsAsync(userId);
+
+        if (!_playerAchievements.ContainsKey(userId.ToString()))
         {
-            _playerAchievements[userId] = new HashSet<string>();
+            _playerAchievements[userId.ToString()] = new HashSet<string>();
         }
-        _playerAchievements[userId].Clear();
+        _playerAchievements[userId.ToString()].Clear();
 
         if (TryComp<PlayerAchievementsComponent>(playerEntity, out var achievementComp))
         {
