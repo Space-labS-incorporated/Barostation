@@ -31,6 +31,9 @@ namespace Content.Server.Atmos.EntitySystems
         private int _currentRunAtmosphereIndex;
         private bool _simulationPaused;
 
+        // Content.Server/Atmos/EntitySystems/AtmosphereSystem.Processing.cs
+        // Найдите метод GetOrNewTile (примерно в начале файла)
+
         private TileAtmosphere GetOrNewTile(EntityUid owner, GridAtmosphereComponent atmosphere, Vector2i index, bool invalidateNew = true)
         {
             var tile = atmosphere.Tiles.GetOrNew(index, out var existing);
@@ -42,6 +45,16 @@ namespace Content.Server.Atmos.EntitySystems
 
             tile.GridIndex = owner;
             tile.GridIndices = index;
+
+            // -- ЭТОТ БЛОК УЖЕ ЕСТЬ, НО МОЖНО УПРОСТИТЬ --
+            // Если это космический тайл, создаем его с иммутабельной водой
+            if (tile.Space && !tile.MapAtmosphere)
+            {
+                // Вместо создания новой смеси, используем готовую SpaceWater
+                tile.Air = GasMixture.SpaceWater;
+            }
+            // ------------------------
+
             return tile;
         }
 

@@ -38,7 +38,20 @@ namespace Content.Server.Atmos.EntitySystems
         /// </summary>
         private readonly List<ICommonSession> _sessions = new();
         private UpdatePlayerJob _updateJob;
+// Content.Server/Atmos/EntitySystems/GasTileOverlaySystem.cs
+private byte GetOpacityForGas(Gas gas, float moles)
+{
+    var gasPrototype = _atmosphereSystem.GetGas(gas);
+    if (gas == Gas.Water)
+    {
+        // Для воды используем специальные настройки видимости
+        var waterVisible = 0.5f;  // Минимальное количество для видимости
+        var waterVisibleMax = 5f;  // Максимальная видимость
+        return (byte)(MathHelper.Clamp01((moles - waterVisible) / (waterVisibleMax - waterVisible)) * 255);
+    }
 
+    return GetOpacity(moles, gasPrototype.GasMolesVisible, gasPrototype.GasMolesVisibleMax);
+}
         private readonly Dictionary<ICommonSession, Dictionary<NetEntity, HashSet<Vector2i>>> _lastSentChunks = new();
 
         // Oh look its more duplicated decal system code!

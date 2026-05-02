@@ -1,4 +1,4 @@
-﻿- type: tile
+- type: tile
   id: BasePlating
   abstract: true
   friction: 1.5
@@ -98,7 +98,7 @@
   footstepSounds:
     collection: FootstepCatwalk
   friction: 1.5
-  isSpace: true
+  isSpace: false
   itemDrop: PartRodMetal1
   heatCapacity: 10000
   mass: 200
