@@ -223,7 +223,7 @@ namespace Content.Shared.Atmos
         /// <summary>
         ///     Total number of gases. Increase this if you want to add more!
         /// </summary>
-        public const int TotalNumberOfGases = 10; // #BaroStation
+        public const int TotalNumberOfGases = 11; // #BaroStation
 
         /// <summary>
         ///     This is the actual length of the gases arrays in mixtures.
@@ -388,6 +388,7 @@ namespace Content.Shared.Atmos
         Ammonia = 6,
         NitrousOxide = 7,
         Frezon = 8,
-        Water = 9  // Новая "вода" для космоса, # BaroStation
+        Water = 9,           // Невидимая вода для космоса
+        LiquidWater = 10,    // Видимая вода для станции
     }
 }

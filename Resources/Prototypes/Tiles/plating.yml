@@ -91,7 +91,6 @@
   id: Lattice
   name: tiles-lattice
   sprite: /Textures/Tiles/lattice.png
-  baseTurf: Space
   isSubfloor: true
   deconstructTools: [ Cutting ]
   weather: true

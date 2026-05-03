@@ -218,6 +218,9 @@ private byte GetOpacityForGas(Gas gas, float moles)
         /// <summary>
         ///     Updates the visuals for a tile on some grid chunk. Returns true if the visuals have changed.
         /// </summary>
+        // Content.Server/Atmos/EntitySystems/GasTileOverlaySystem.cs
+        // Найдите метод UpdateChunkTile (примерно строка 200-250)
+
         private bool UpdateChunkTile(GridAtmosphereComponent gridAtmosphere, GasOverlayChunk chunk, Vector2i index)
         {
             ref var oldData = ref chunk.TileData[chunk.GetDataIndex(index)];
@@ -248,14 +251,17 @@ private byte GetOpacityForGas(Gas gas, float moles)
                 oldData = new GasOverlayData(tile.Hotspot.State, new byte[VisibleGasId.Length], newByteTemp);
             }
             else if (oldData.FireState != tile.Hotspot.State ||
-                     Math.Abs(oldData.ByteGasTemperature.Value - newByteTemp.Value) > 1 || // Dirty Temperature when there is more then 1 byte difference. That should measure up to minimum 4 degreese difference, 6 degreese on average.
-                     (oldData.ByteGasTemperature.Value != newByteTemp.Value && newByteTemp.Value > ThermalByte.TempResolution)) // change of special ThermalByte value
+                     Math.Abs(oldData.ByteGasTemperature.Value - newByteTemp.Value) > 1 ||
+                     (oldData.ByteGasTemperature.Value != newByteTemp.Value && newByteTemp.Value > ThermalByte.TempResolution))
             {
                 changed = true;
                 oldData = new GasOverlayData(tile.Hotspot.State, oldData.Opacity, newByteTemp);
             }
 
-            if (tile is {Air: not null, NoGridTile: false})
+            // ИЗМЕНЕНИЕ ЗДЕСЬ: Игнорируем MapAtmosphere тайлы для отображения газов
+            // Было: if (tile is {Air: not null, NoGridTile: false})
+            // Стало: показываем газы только на реальных тайлах грида (не космических)
+            if (tile is { Air: not null, NoGridTile: false, MapAtmosphere: false })
             {
                 for (var i = 0; i < VisibleGasId.Length; i++)
                 {
@@ -271,7 +277,6 @@ private byte GetOpacityForGas(Gas gas, float moles)
                             oldOpacity = 0;
                             changed = true;
                         }
-
                         continue;
                     }
 
@@ -286,10 +291,14 @@ private byte GetOpacityForGas(Gas gas, float moles)
             }
             else
             {
+                // Очищаем все оверлеи для космических тайлов
                 for (var i = 0; i < VisibleGasId.Length; i++)
                 {
-                    changed |= oldData.Opacity[i] != 0;
-                    oldData.Opacity[i] = 0;
+                    if (oldData.Opacity[i] != 0)
+                    {
+                        oldData.Opacity[i] = 0;
+                        changed = true;
+                    }
                 }
             }
 

@@ -18,9 +18,9 @@
   molarMass: 18.015
   gasMolesVisible: 0.01  # <-- Очень маленькое значение для видимости
   gasVisibilityFactor: 10
-  gasOverlaySprite:  # <-- Должен быть указан!
-    sprite: /Textures/Effects/water.rsi
-    state: water_overlay
+  # gasOverlaySprite:  # <-- Должен быть указан!
+   # sprite: /Textures/Effects/water.rsi
+    #state: water_overlay
   color: "#4a90d9"
   pricePerMole: 0.01
   isFuel: false
@@ -133,3 +133,20 @@
   color: '#3a758c'
   reagent: Frezon
   pricePerMole: 1
+
+  # Resources/Prototypes/Atmos/Gases/liquid_water.yml
+- type: gas
+  id: LiquidWater
+  name: gas-liquid-water-name
+  abbreviation: gas-liquid-water-abbreviation
+  molarHeatCapacity: 75.3
+  molarMass: 18.015
+  gasMolesVisible: 0.01  # Видима при очень малом количестве
+  gasVisibilityFactor: 15  # Хорошая видимость
+  gasOverlaySprite:
+    sprite: /Textures/Effects/water.rsi
+    state: water_overlay
+  color: "#4a90d9"
+  pricePerMole: 0.01
+  isFuel: false
+  isOxidizer: false
