@@ -1,6 +1,5 @@
 // Content.Server/Atmos/EntitySystems/SpaceWaterSystem.cs
 
-using Content.Server.GameTicking;
 using Content.Server.GameTicking.Events;
 using Content.Shared.Atmos;
 using Content.Shared.Atmos.Components;
@@ -13,20 +12,10 @@ public sealed class SpaceWaterSystem : EntitySystem
     [Dependency] private readonly AtmosphereSystem _atmosphere = default!;
     [Dependency] private readonly SharedMapSystem _mapSystem = default!;
 
-    private const float SpaceWaterAmount = 10000f;
-
-    private float _updateCounter = 0f;
-    private const float UpdateInterval = 5f;
-
     public override void Initialize()
     {
         base.Initialize();
-
-        // Подписываемся только на событие старта раунда
         SubscribeLocalEvent<RoundStartingEvent>(OnRoundStarting);
-
-        // НЕ подписываемся на события GridAtmosphereComponent, так как они уже заняты
-        // Новые гриды будут обработаны в Update() при следующем цикле
     }
 
     private void OnRoundStarting(RoundStartingEvent ev)
@@ -34,11 +23,11 @@ public sealed class SpaceWaterSystem : EntitySystem
         var query = EntityQueryEnumerator<GridAtmosphereComponent, MapGridComponent>();
         while (query.MoveNext(out var uid, out var gridAtmos, out var grid))
         {
-            FillGridWithWater(uid, gridAtmos, grid);
+            FillGridWithSpaceWater(uid, gridAtmos, grid);
         }
     }
 
-    private void FillGridWithWater(EntityUid gridUid, GridAtmosphereComponent gridAtmos, MapGridComponent grid)
+    private void FillGridWithSpaceWater(EntityUid gridUid, GridAtmosphereComponent gridAtmos, MapGridComponent grid)
     {
         var enumerator = _mapSystem.GetAllTilesEnumerator(gridUid, grid);
 
@@ -49,75 +38,51 @@ public sealed class SpaceWaterSystem : EntitySystem
 
             var indices = tileRef.Value.GridIndices;
 
-            var tileAir = _atmosphere.GetTileMixture(gridUid, null, indices);
-            if (tileAir == null || tileAir.Immutable)
+            // Проверяем, является ли тайл космосом
+            if (!_atmosphere.IsTileSpace(gridUid, null, indices))
                 continue;
 
-            var isSpace = _atmosphere.IsTileSpace(gridUid, null, indices);
+            // Создаём космическую воду с правильными параметрами
+            var spaceWater = CreateSpaceWaterMixture();
 
-            if (isSpace)
-            {
-                var currentWater = tileAir.GetMoles(Gas.Water);
-                var currentLiquidWater = tileAir.GetMoles(Gas.LiquidWater);
+            // Устанавливаем смесь на тайл через API
+            _atmosphere.SetTileMixtureInternal(gridUid, indices, spaceWater);
 
-                if (currentWater + currentLiquidWater < SpaceWaterAmount)
-                {
-                    tileAir.SetMoles(Gas.Water, SpaceWaterAmount);
-                    tileAir.SetMoles(Gas.LiquidWater, 0);
-                    tileAir.Temperature = Atmospherics.TCMB;
-                    tileAir.MarkImmutable();
-
-                    _atmosphere.InvalidateTile(gridUid, indices);
-                }
-            }
+            // Инвалидируем тайл для обновления визуализации
+            _atmosphere.InvalidateTile(gridUid, indices);
         }
     }
 
-    public override void Update(float frameTime)
+    private GasMixture CreateSpaceWaterMixture()
     {
-        base.Update(frameTime);
+        const float targetPressure = 1000f;
+        const float targetTemp = Atmospherics.T0C; // 273.15K (0°C)
+        var volume = Atmospherics.CellVolume; // 2500L
 
-        _updateCounter += frameTime;
-        if (_updateCounter < UpdateInterval)
-            return;
+        // n = (P * V) / (R * T)
+        var requiredMoles = (targetPressure * volume) / (Atmospherics.R * targetTemp);
 
-        _updateCounter = 0f;
-
-        var query = EntityQueryEnumerator<GridAtmosphereComponent, MapGridComponent>();
-        while (query.MoveNext(out var uid, out var gridAtmos, out var grid))
+        var mixture = new GasMixture(volume)
         {
-            var enumerator = _mapSystem.GetAllTilesEnumerator(uid, grid);
+            Temperature = targetTemp
+        };
 
-            while (enumerator.MoveNext(out var tileRef))
-            {
-                if (!tileRef.HasValue)
-                    continue;
+        mixture.SetMoles(Gas.Water, requiredMoles);
 
-                var indices = tileRef.Value.GridIndices;
+        // Убеждаемся, что другие газы отсутствуют
+        mixture.SetMoles(Gas.Oxygen, 0);
+        mixture.SetMoles(Gas.Nitrogen, 0);
+        mixture.SetMoles(Gas.CarbonDioxide, 0);
+        mixture.SetMoles(Gas.Plasma, 0);
+        mixture.SetMoles(Gas.Tritium, 0);
+        mixture.SetMoles(Gas.WaterVapor, 0);
+        mixture.SetMoles(Gas.Ammonia, 0);
+        mixture.SetMoles(Gas.NitrousOxide, 0);
+        mixture.SetMoles(Gas.Frezon, 0);
+        mixture.SetMoles(Gas.LiquidWater, 0);
 
-                var tileAir = _atmosphere.GetTileMixture(uid, null, indices);
-                if (tileAir == null)
-                    continue;
+        mixture.MarkImmutable();
 
-                var isSpace = _atmosphere.IsTileSpace(uid, null, indices);
-
-                // Восстанавливаем воду, если она была удалена и тайл стал mutable
-                if (isSpace && !tileAir.Immutable)
-                {
-                    var currentWater = tileAir.GetMoles(Gas.Water);
-                    var currentLiquidWater = tileAir.GetMoles(Gas.LiquidWater);
-
-                    if (currentWater + currentLiquidWater < SpaceWaterAmount * 0.9f)
-                    {
-                        tileAir.SetMoles(Gas.Water, SpaceWaterAmount);
-                        tileAir.SetMoles(Gas.LiquidWater, 0);
-                        tileAir.Temperature = Atmospherics.TCMB;
-                        tileAir.MarkImmutable();
-
-                        _atmosphere.InvalidateTile(uid, indices);
-                    }
-                }
-            }
-        }
+        return mixture;
     }
 }

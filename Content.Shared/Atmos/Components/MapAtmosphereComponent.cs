@@ -12,12 +12,21 @@ public sealed partial class MapAtmosphereComponent : SharedMapAtmosphereComponen
 {
     private static GasMixture CreateSpaceWaterMixture()
     {
-        var mixture = new GasMixture(Atmospherics.CellVolume)
+        // Правильные параметры: 1000 kPa, 0°C (273.15K)
+        const float targetPressure = 1000f;
+        const float targetTemp = Atmospherics.T0C; // 273.15K
+        var volume = Atmospherics.CellVolume; // 2500L
+
+        // n = (P * V) / (R * T)
+        var requiredMoles = (targetPressure * volume) / (Atmospherics.R * targetTemp);
+
+        var mixture = new GasMixture(volume)
         {
-            Temperature = Atmospherics.TCMB
+            Temperature = targetTemp
         };
-        mixture.AdjustMoles(Gas.Water, 1000f);
-        mixture.MarkImmutable();
+        mixture.SetMoles(Gas.Water, requiredMoles);
+        mixture.MarkImmutable(); // Используем метод вместо прямого присваивания
+
         return mixture;
     }
 
@@ -25,7 +34,7 @@ public sealed partial class MapAtmosphereComponent : SharedMapAtmosphereComponen
     /// The default GasMixture a map will have. Space mixture by default.
     /// </summary>
     [DataField]
-    public GasMixture Mixture = CreateSpaceWaterMixture();  // #BaroStation
+    public GasMixture Mixture = CreateSpaceWaterMixture();  // #BaroStation - теперь 1000 kPa, 0°C
 
     /// <summary>
     /// Whether empty tiles will be considered space or not.

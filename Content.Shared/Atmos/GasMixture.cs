@@ -35,12 +35,27 @@ namespace Content.Shared.Atmos
         public static GasMixture SpaceGas => new() { Volume = Atmospherics.CellVolume, Temperature = Atmospherics.TCMB, Immutable = true };
 
         // ИСПРАВЛЕНО: Теперь использует extension метод из статического класса
-        public static GasMixture SpaceWater => new GasMixture(Atmospherics.CellVolume)
+        public static GasMixture SpaceWater
         {
-            Temperature = Atmospherics.T20C, // Временно, потом скорректируем
-            Immutable = true
-        }.WithWater();
+            get
+            {
+                // Для P = 1000 kPa, V = 2500 L, T = 273.15 K
+                // n = (P * V) / (R * T) = (1000 * 2500) / (8.314 * 273.15) ≈ 1100.5 моль
+                const float targetPressure = 1000f; // kPa
+                const float targetTemp = Atmospherics.T0C; // 273.15 K
+                var volume = Atmospherics.CellVolume; // 2500 L
 
+                var requiredMoles = (targetPressure * volume) / (Atmospherics.R * targetTemp);
+
+                var mixture = new GasMixture(volume)
+                {
+                    Temperature = targetTemp,
+                    Immutable = true
+                };
+                mixture.SetMoles(Gas.Water, requiredMoles);
+                return mixture;
+            }
+        }
         // ИСПРАВЛЕНО: Убираем метод расширения отсюда, он теперь в статическом классе выше
         // public static GasMixture WithWater(this GasMixture mixture) {mixture.AdjustMoles(Gas.Water, 1000f);  return mixture;}
 

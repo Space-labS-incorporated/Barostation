@@ -9,12 +9,11 @@ namespace Content.Server.Atmos.EntitySystems;
 public sealed partial class AtmosphereSystem
 {
     private float _waterMaintenanceTimer = 0f;
-    private const float WaterMaintenanceInterval = 2f; // Проверяем каждые 2 секунды
+    private const float WaterMaintenanceInterval = 5f; // Проверяем раз в 5 секунд
 
-    // Целевые параметры для Water
-    private const float TargetWaterPressure = 500f; // kPa
-    private const float MinWaterTemperature = 247.15f; // -26°C
-    private const float MaxWaterTemperature = 273.15f; // 0°C
+    // Целевые параметры для космической воды
+    private const float TargetWaterPressure = 1000f; // kPa
+    private const float TargetWaterTemperature = Atmospherics.T0C; // 273.15 K (0°C)
 
     private void InitializeWaterMaintenance()
     {
@@ -31,10 +30,9 @@ public sealed partial class AtmosphereSystem
         }
     }
 
-    // В AtmosphereSystem.WaterMaintenance.cs (исправленная версия)
     public void MaintainWaterOnTile(GridAtmosphereComponent gridAtmos, TileAtmosphere tile)
     {
-        // Только для иммутабельной (космической) воды
+        // Работаем только с иммутабельной (космической) водой
         if (tile?.Air == null || !tile.Air.Immutable)
             return;
 
@@ -42,21 +40,38 @@ public sealed partial class AtmosphereSystem
         if (waterMoles <= 0)
             return;
 
-        // Фиксируем температуру
-        if (tile.Air.Temperature < MinWaterTemperature ||
-            tile.Air.Temperature > MaxWaterTemperature)
+        var changed = false;
+
+        // 1. Фиксируем температуру на 0°C
+        if (Math.Abs(tile.Air.Temperature - TargetWaterTemperature) > 0.1f)
         {
-            tile.Air.Temperature = _random.NextFloat(MinWaterTemperature, MaxWaterTemperature);
+            tile.Air.Temperature = TargetWaterTemperature;
+            changed = true;
         }
 
-        // Фиксируем количество молей для давления 500 кПа
+        // 2. Рассчитываем нужное количество молей для давления 1000 kPa
         // n = (P * V) / (R * T)
         var targetMoles = (TargetWaterPressure * tile.Air.Volume) /
-                          (Atmospherics.R * tile.Air.Temperature);
+                          (Atmospherics.R * TargetWaterTemperature);
 
-        if (Math.Abs(waterMoles - targetMoles) > Atmospherics.GasMinMoles)
+        // 3. Корректируем количество молей, если нужно
+        if (Math.Abs(waterMoles - targetMoles) > 0.1f)
         {
             tile.Air.SetMoles(Gas.Water, targetMoles);
+            changed = true;
+        }
+
+        // 4. Убеждаемся, что смесь остаётся иммутабельной
+        if (!tile.Air.Immutable)
+        {
+            tile.Air.MarkImmutable();
+            changed = true;
+        }
+
+        // Если что-то изменилось, обновляем визуализацию
+        if (changed && TryComp(tile.GridIndex, out GasTileOverlayComponent? overlay))
+        {
+            InvalidateVisuals((tile.GridIndex, overlay), tile.GridIndices);
         }
     }
 
@@ -71,7 +86,6 @@ public sealed partial class AtmosphereSystem
         }
     }
 
-    // Обновляем воду периодически (вызывается из Update)
     private void UpdateWaterMaintenance(float frameTime)
     {
         _waterMaintenanceTimer += frameTime;

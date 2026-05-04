@@ -46,13 +46,11 @@ namespace Content.Server.Atmos.EntitySystems
             tile.GridIndices = index;
 
             // --- УЛУЧШЕННАЯ ЛОГИКА ДЛЯ ВОДЫ ---
-            // Если это космический тайл, создаём его с водой
-            // Проверяем, не является ли он частью карты (MapAtmosphere)
+            // Если это космический тайл, создаём его с правильными параметрами
             if (tile.Space && !tile.MapAtmosphere)
             {
-                // Используем готовую константу SpaceWater
-                tile.Air = GasMixture.SpaceWater;
-                tile.Space = false; // Важно: помечаем как НЕ космос, чтобы вода не исчезала
+                tile.Air = GasMixture.SpaceWater; // Используем исправленный SpaceWater
+                tile.Space = false; // Помечаем как НЕ космос, чтобы вода не исчезала
             }
             // --------------------------------
 
