@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -9,6 +9,22 @@ using Robust.Shared.Utility;
 
 namespace Content.Shared.Atmos
 {
+    // Статический класс для extension методов (ДОБАВИТЬ ЭТОТ КЛАСС)
+    public static class GasMixtureExtensions
+    {
+        public static GasMixture WithWater(this GasMixture mixture)
+        {
+            mixture.AdjustMoles(Gas.Water, 1000f);
+            // Добавляем настройку давления через моли
+            // P*V = n*R*T => n = (P*V)/(R*T)
+            // При P=500, V=2500, R=8.314, T возьмем среднее ~260K
+            // n = (500 * 2500) / (8.314 * 260) ≈ 578 моль
+            mixture.SetMoles(Gas.Water, 578f);
+            mixture.Temperature = 260f; // -13°C, среднее между -26 и 0
+            return mixture;
+        }
+    }
+
     /// <summary>
     ///     A general-purpose, variable volume gas mixture.
     /// </summary>
@@ -16,7 +32,32 @@ namespace Content.Shared.Atmos
     [DataDefinition]
     public sealed partial class GasMixture : IEquatable<GasMixture>, ISerializationHooks, IEnumerable<(Gas gas, float moles)>
     {
-        public static GasMixture SpaceGas => new() {Volume = Atmospherics.CellVolume, Temperature = Atmospherics.TCMB, Immutable = true};
+        public static GasMixture SpaceGas => new() { Volume = Atmospherics.CellVolume, Temperature = Atmospherics.TCMB, Immutable = true };
+
+        // ИСПРАВЛЕНО: Теперь использует extension метод из статического класса
+        public static GasMixture SpaceWater
+        {
+            get
+            {
+                // Для P = 1000 kPa, V = 2500 L, T = 273.15 K
+                // n = (P * V) / (R * T) = (1000 * 2500) / (8.314 * 273.15) ≈ 1100.5 моль
+                const float targetPressure = 1000f; // kPa
+                const float targetTemp = Atmospherics.T0C; // 273.15 K
+                var volume = Atmospherics.CellVolume; // 2500 L
+
+                var requiredMoles = (targetPressure * volume) / (Atmospherics.R * targetTemp);
+
+                var mixture = new GasMixture(volume)
+                {
+                    Temperature = targetTemp,
+                    Immutable = true
+                };
+                mixture.SetMoles(Gas.Water, requiredMoles);
+                return mixture;
+            }
+        }
+        // ИСПРАВЛЕНО: Убираем метод расширения отсюда, он теперь в статическом классе выше
+        // public static GasMixture WithWater(this GasMixture mixture) {mixture.AdjustMoles(Gas.Water, 1000f);  return mixture;}
 
         // No access, to ensure immutable mixtures are never accidentally mutated.
         [Access(typeof(SharedAtmosphereSystem), typeof(SharedAtmosDebugOverlaySystem), typeof(GasEnumerator), Other = AccessPermissions.None)]
@@ -162,13 +203,15 @@ namespace Content.Shared.Atmos
             return RemoveRatio(amount / TotalMoles);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        // Content.Shared/Atmos/GasMixture.cs
+        // Найти метод RemoveRatio и заменить его
+
         public GasMixture RemoveRatio(float ratio)
         {
             switch (ratio)
             {
                 case <= 0:
-                    return new GasMixture(Volume){Temperature = Temperature};
+                    return new GasMixture(Volume) { Temperature = Temperature };
                 case > 1:
                     ratio = 1;
                     break;
@@ -176,10 +219,30 @@ namespace Content.Shared.Atmos
 
             var removed = new GasMixture(Volume) { Temperature = Temperature };
 
+            // Сохраняем воду из оригинальной смеси
+            var originalWater = Moles[(int)Gas.Water];
+            var originalLiquidWater = Moles[(int)Gas.LiquidWater];
+
             Moles.CopyTo(removed.Moles.AsSpan());
             NumericsHelpers.Multiply(removed.Moles, ratio);
             if (!Immutable)
                 NumericsHelpers.Sub(Moles, removed.Moles);
+
+            // Восстанавливаем воду в исходной смеси
+            if (!Immutable)
+            {
+                if (originalWater > 0)
+                {
+                    Moles[(int)Gas.Water] = originalWater;
+                    removed.Moles[(int)Gas.Water] = 0;
+                }
+
+                if (originalLiquidWater > 0)
+                {
+                    Moles[(int)Gas.LiquidWater] = originalLiquidWater;
+                    removed.Moles[(int)Gas.LiquidWater] = 0;
+                }
+            }
 
             for (var i = 0; i < Moles.Length; i++)
             {
@@ -216,7 +279,19 @@ namespace Content.Shared.Atmos
         public void Clear()
         {
             if (Immutable) return;
+
+            // -- МОДИФИЦИРУЕМ ЭТОТ КОД --
+            // Сохраняем воду, если она есть
+            var savedWater = Moles[(int)Gas.Water];
             Array.Clear(Moles, 0, Atmospherics.TotalNumberOfGases);
+
+            // Восстанавливаем воду
+            if (savedWater > 0)
+            {
+                Moles[(int)Gas.Water] = savedWater;
+                // Не восстанавливаем температуру, чтобы вода могла нагреваться
+            }
+            // ---------------------------
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -243,7 +318,7 @@ namespace Content.Shared.Atmos
                 if (Moles[i] == 0)
                     continue;
 
-                molesPerGas.Add(((Gas) i).ToString(), Moles[i]);
+                molesPerGas.Add(((Gas)i).ToString(), Moles[i]);
             }
 
             return new GasMixtureStringRepresentation(TotalMoles, Temperature, Pressure, molesPerGas);

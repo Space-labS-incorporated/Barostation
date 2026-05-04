@@ -38,7 +38,28 @@ namespace Content.Server.Atmos.EntitySystems
         /// </summary>
         private readonly List<ICommonSession> _sessions = new();
         private UpdatePlayerJob _updateJob;
+        // Content.Server/Atmos/EntitySystems/GasTileOverlaySystem.cs
+        private byte GetOpacityForGas(Gas gas, float moles)
+        {
+            var gasPrototype = _atmosphereSystem.GetGas(gas);
 
+            // Специальная обработка для жидкой воды - делаем её видимой синей
+            if (gas == Gas.LiquidWater)
+            {
+                var liquidWaterVisible = 0.5f;
+                var liquidWaterVisibleMax = 10f;
+                return (byte)(MathHelper.Clamp01((moles - liquidWaterVisible) / (liquidWaterVisibleMax - liquidWaterVisible)) * 255);
+            }
+
+            // Специальная обработка для невидимой воды - делаем её совсем невидимой
+            if (gas == Gas.Water)
+            {
+                return 0;
+            }
+
+            // Обычная обработка для остальных газов
+            return GetOpacity(moles, gasPrototype.GasMolesVisible, gasPrototype.GasMolesVisibleMax);
+        }
         private readonly Dictionary<ICommonSession, Dictionary<NetEntity, HashSet<Vector2i>>> _lastSentChunks = new();
 
         // Oh look its more duplicated decal system code!
@@ -205,6 +226,12 @@ namespace Content.Server.Atmos.EntitySystems
         /// <summary>
         ///     Updates the visuals for a tile on some grid chunk. Returns true if the visuals have changed.
         /// </summary>
+        // Content.Server/Atmos/EntitySystems/GasTileOverlaySystem.cs
+        // Найдите метод UpdateChunkTile (примерно строка 200-250)
+
+        // Content.Server/Atmos/EntitySystems/GasTileOverlaySystem.cs
+        // Найти метод UpdateChunkTile и заменить часть с обработкой газов
+
         private bool UpdateChunkTile(GridAtmosphereComponent gridAtmosphere, GasOverlayChunk chunk, Vector2i index)
         {
             ref var oldData = ref chunk.TileData[chunk.GetDataIndex(index)];
@@ -235,14 +262,15 @@ namespace Content.Server.Atmos.EntitySystems
                 oldData = new GasOverlayData(tile.Hotspot.State, new byte[VisibleGasId.Length], newByteTemp);
             }
             else if (oldData.FireState != tile.Hotspot.State ||
-                     Math.Abs(oldData.ByteGasTemperature.Value - newByteTemp.Value) > 1 || // Dirty Temperature when there is more then 1 byte difference. That should measure up to minimum 4 degreese difference, 6 degreese on average.
-                     (oldData.ByteGasTemperature.Value != newByteTemp.Value && newByteTemp.Value > ThermalByte.TempResolution)) // change of special ThermalByte value
+                     Math.Abs(oldData.ByteGasTemperature.Value - newByteTemp.Value) > 1 ||
+                     (oldData.ByteGasTemperature.Value != newByteTemp.Value && newByteTemp.Value > ThermalByte.TempResolution))
             {
                 changed = true;
                 oldData = new GasOverlayData(tile.Hotspot.State, oldData.Opacity, newByteTemp);
             }
 
-            if (tile is {Air: not null, NoGridTile: false})
+            // Обработка видимых газов с учётом воды
+            if (tile is { Air: not null, NoGridTile: false, MapAtmosphere: false })
             {
                 for (var i = 0; i < VisibleGasId.Length; i++)
                 {
@@ -251,18 +279,39 @@ namespace Content.Server.Atmos.EntitySystems
                     var moles = tile.Air[id];
                     ref var oldOpacity = ref oldData.Opacity[i];
 
-                    if (moles < gas.GasMolesVisible)
+                    // Пропускаем невидимую воду
+                    if (gas.ID == "Water")
                     {
                         if (oldOpacity != 0)
                         {
                             oldOpacity = 0;
                             changed = true;
                         }
-
                         continue;
                     }
 
-                    var opacity = GetOpacity(moles, gas.GasMolesVisible, gas.GasMolesVisibleMax);
+                    // Жидкая вода использует специальную видимость
+                    byte opacity;
+                    if (gas.ID == "LiquidWater")
+                    {
+                        var liquidWaterVisible = 0.5f;
+                        var liquidWaterVisibleMax = 10f;
+                        opacity = (byte)(MathHelper.Clamp01((moles - liquidWaterVisible) / (liquidWaterVisibleMax - liquidWaterVisible)) * 255);
+                    }
+                    else
+                    {
+                        if (moles < gas.GasMolesVisible)
+                        {
+                            if (oldOpacity != 0)
+                            {
+                                oldOpacity = 0;
+                                changed = true;
+                            }
+                            continue;
+                        }
+
+                        opacity = GetOpacity(moles, gas.GasMolesVisible, gas.GasMolesVisibleMax);
+                    }
 
                     if (oldOpacity == opacity)
                         continue;
@@ -273,10 +322,14 @@ namespace Content.Server.Atmos.EntitySystems
             }
             else
             {
+                // Очищаем оверлеи для космических тайлов
                 for (var i = 0; i < VisibleGasId.Length; i++)
                 {
-                    changed |= oldData.Opacity[i] != 0;
-                    oldData.Opacity[i] = 0;
+                    if (oldData.Opacity[i] != 0)
+                    {
+                        oldData.Opacity[i] = 0;
+                        changed = true;
+                    }
                 }
             }
 

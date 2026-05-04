@@ -3,7 +3,7 @@
   name: tiles-space
   friction: 0
   isSubfloor: true
-  isSpace: true
+  isSpace: false
   sturdy: false
   thermalConductivity: 0.4
   heatCapacity: 700000

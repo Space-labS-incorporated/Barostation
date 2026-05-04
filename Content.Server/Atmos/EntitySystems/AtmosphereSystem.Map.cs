@@ -42,7 +42,27 @@ public partial class AtmosphereSystem
         SetMapSpace(uid, space, component, false);
         RefreshAllGridMapAtmospheres(uid);
     }
+    // Content.Server/Atmos/EntitySystems/AtmosphereSystem.Map.cs
+    private (GasMixture Air, bool IsSpace) GetDefaultMapAtmosphere(MapAtmosphereComponent? map)
+    {
+        if (map == null)
+            return (GasMixture.SpaceGas, true);
 
+        var air = map.Mixture;
+        DebugTools.Assert(air.Immutable);
+
+        // Если это вода в космосе, не отмечаем как space
+        var isSpace = map.Space && !HasWaterOnly(air);
+
+        return (air, isSpace);
+    }
+
+    private bool HasWaterOnly(GasMixture mixture)
+    {
+        var totalMoles = mixture.TotalMoles;
+        var waterMoles = mixture.GetMoles(Gas.Water);
+        return Math.Abs(totalMoles - waterMoles) < 0.01f && waterMoles > 0;
+    }
     public void SetMapGasMixture(EntityUid uid, GasMixture mixture, MapAtmosphereComponent? component = null, bool updateTiles = true)
     {
         if (!Resolve(uid, ref component))

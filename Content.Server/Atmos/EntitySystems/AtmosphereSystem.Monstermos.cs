@@ -32,7 +32,17 @@ namespace Content.Server.Atmos.EntitySystems
             int cycleNum)
         {
             if (tile.Air == null || (tile.MonstermosInfo.LastCycle >= cycleNum))
-                return; // Already done.
+                return;
+
+            // --- ДОБАВЛЕНА ЗАЩИТА ДЛЯ ВОДЫ ---
+            // Если на тайле есть вода, пропускаем выравнивание давления
+            var hasWater = tile.Air.GetMoles(Gas.Water) > 0.1f || tile.Air.GetMoles(Gas.LiquidWater) > 0.1f;
+            if (hasWater)
+            {
+                tile.MonstermosInfo.LastCycle = cycleNum;
+                return;
+            }
+            // --------------------------------
 
             tile.MonstermosInfo = new MonstermosInfo();
 

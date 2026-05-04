@@ -147,3 +147,13 @@
   components:
     - type: GasMiner
       spawnGas: NitrousOxide
+
+- type: entity
+  name: water gas miner
+  parent: GasMinerBase
+  id: GasMinerWater
+  components:
+    - type: GasMiner
+      spawnGas: Water
+      spawnTemperature: 293.15  # 20°C - комнатная температура для воды
+      spawnAmount: 100  # Меньше, чем у газов (было 400)

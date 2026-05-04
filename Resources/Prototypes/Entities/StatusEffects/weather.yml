@@ -176,3 +176,14 @@
       params:
         loop: true
         volume: -6
+
+- type: entity
+  parent: WeatherBase
+  id: WeatherWater
+  components:
+  - type: WeatherStatusEffect
+    sprite:
+      sprite: /Textures/Effects/water.rsi
+      state: water_overlay
+    # Без звука
+    scrolling: 0,0  # Статичный, не движется
