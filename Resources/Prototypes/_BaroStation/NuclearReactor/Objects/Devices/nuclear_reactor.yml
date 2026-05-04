@@ -4,89 +4,86 @@
   name: nuclear reactor
   description: Generates massive amounts of energy through uranium rod decay. Requires temperature control.
   components:
-  - type: Sprite
-    sprite: _BaroStation/NuclearReactor/reactor.rsi
-    layers:
-    - state: reactor_off
-      map: ["enum.PowerDeviceVisualLayers.Powered"]
-  - type: Appearance
-  - type: GenericVisualizer
-    visuals:
-      enum.PowerDeviceVisuals.Powered:
-        enum.PowerDeviceVisualLayers.Powered:
-          True: { state: reactor_on }
-          False: { state: reactor_off }
-  - type: NuclearReactor
-    maxPowerOutput: 250000
-  - type: PowerSupplier
-    supplyRampRate: 50000
-    supplyRampTolerance: 5000
-  - type: Anchorable
-  - type: Pullable
-  - type: DeviceLinkSource
-    ports:
-      - NuclearReactorLinkSource
-  - type: UserInterface
-    interfaces:
-      enum.NuclearReactorUiKey.Key:
-        type: NuclearReactorBoundUserInterface
-  - type: ActivatableUI
-    key: enum.NuclearReactorUiKey.Key
-    requireComplex: true
-  - type: ActivatableUIRequiresPower
-  - type: Transform
-    anchored: true
-  - type: Physics
-    bodyType: Static
-  - type: Fixtures
-    fixtures:
-      fix1:
-        shape:
-          !type:PhysShapeAabb
-          bounds: "-0.5,-0.5,0.5,0.5"
-        density: 190
-        mask:
-        - MachineMask
-        layer:
-        - MachineLayer
-  - type: Damageable
-    damageContainer: Inorganic
-  - type: Destructible
-    thresholds:
-    - trigger:
-        !type:DamageTrigger
-        damage: 500
-      behaviors:
-      - !type:DoActsBehavior
-        acts: ["Destruction"]
-      - !type:PlaySoundBehavior
-        sound:
-          path: /Audio/Effects/explosion1.ogg
+    - type: Sprite
+      sprite: _BaroStation/Objects/Power/NuclearReactor/nuclear_reactor.rsi
+      layers:
+        - state: off
+          map: ["enum.PowerDeviceVisualLayers.Powered"]
+    - type: Appearance
+    - type: GenericVisualizer
+      visuals:
+        enum.PowerDeviceVisuals.Powered:
+          enum.PowerDeviceVisualLayers.Powered:
+            True: { state: on }
+            False: { state: off }
+    - type: NuclearReactor
+      maxPowerOutput: 250000
+    - type: PowerSupplier
+      supplyRampRate: 50000
+      supplyRampTolerance: 5000
+    - type: Anchorable
+    - type: Pullable
+    - type: DeviceLinkSource
+      ports:
+        - NuclearReactorLinkSource
+    - type: UserInterface
+      interfaces:
+        enum.NuclearReactorUiKey.Key:
+          type: NuclearReactorBoundUserInterface
+    - type: ActivatableUI
+      key: enum.NuclearReactorUiKey.Key
+      requireComplex: true
+    - type: ActivatableUIRequiresPower
+    - type: Transform
+      anchored: true
+    - type: Physics
+      bodyType: Static
+    - type: Fixtures
+      fixtures:
+        fix1:
+          shape: !type:PhysShapeAabb
+            bounds: "-0.5,-0.5,0.5,0.5"
+          density: 190
+          mask:
+            - MachineMask
+          layer:
+            - MachineLayer
+    - type: Damageable
+      damageContainer: Inorganic
+    - type: Destructible
+      thresholds:
+        - trigger: !type:DamageTrigger
+            damage: 500
+          behaviors:
+            - !type:DoActsBehavior
+              acts: ["Destruction"]
+            - !type:PlaySoundBehavior
+              sound:
+                path: /Audio/Effects/explosion1.ogg
 
-  - type: NodeContainer
-    examinable: true
-    nodes:
-      output:
-        !type:CableDeviceNode
-        nodeGroupID: HVPower
+    - type: NodeContainer
+      examinable: true
+      nodes:
+        output: !type:CableDeviceNode
+          nodeGroupID: HVPower
 
-  - type: PowerMonitoringDevice
-    group: Generator
-    loadNode: output
-    sprite: _BaroStation/NuclearReactor/reactor.rsi
-    state: reactor_off
+    - type: PowerMonitoringDevice
+      group: Generator
+      loadNode: output
+      sprite: _BaroStation/Objects/Power/NuclearReactor/nuclear_reactor.rsi
+      state: off
 
-  - type: Electrified
-    onHandInteract: false
-    onInteractUsing: false
-    onBump: false
-    requirePower: true
-    highVoltageNode: output
+    - type: Electrified
+      onHandInteract: false
+      onInteractUsing: false
+      onBump: false
+      requirePower: true
+      highVoltageNode: output
 
-  - type: RadiationSource
-    intensity: 1
-    slope: 0.15
-    enabled: false
+    - type: RadiationSource
+      intensity: 1
+      slope: 0.15
+      enabled: false
 
 - type: sourcePort
   id: NuclearReactorLinkSource
