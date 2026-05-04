@@ -4,24 +4,24 @@
   name: uranium rod
   description: A fuel element based on enriched uranium. Used in nuclear reactors.
   components:
-  - type: Sprite
-    sprite: _BaroStation/NuclearReactor/uranium_rod.rsi
-    state: rod
-  - type: Item
-    size: Normal
-  - type: UraniumRod
-    fuel: 3000
-    maxFuel: 3000
-  - type: PhysicalComposition
-    materialComposition:
-      Uranium: 200
-  - type: StaticPrice
-    price: 500
-  - type: Tag
-    tags:
-    - UraniumRod
-  - type: RadiationSource
-    intensity: 1
+    - type: Sprite
+      sprite: _BaroStation/Objects/Power/NuclearReactor/uranium_rod.rsi
+      state: uranium_rod
+    - type: Item
+      size: Normal
+    - type: UraniumRod
+      fuel: 3000
+      maxFuel: 3000
+    - type: PhysicalComposition
+      materialComposition:
+        Uranium: 200
+    - type: StaticPrice
+      price: 500
+    - type: Tag
+      tags:
+        - UraniumRod
+    - type: RadiationSource
+      intensity: 1
 
 - type: latheRecipe
   id: UraniumRod
@@ -31,9 +31,9 @@
     Uranium: 1500
     Steel: 100
   categories:
-  - Materials
+    - Materials
 
 - type: latheRecipePack
   id: UraniumRodPack
   recipes:
-  - UraniumRod
+    - UraniumRod
