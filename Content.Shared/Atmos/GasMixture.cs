@@ -15,6 +15,12 @@ namespace Content.Shared.Atmos
         public static GasMixture WithWater(this GasMixture mixture)
         {
             mixture.AdjustMoles(Gas.Water, 1000f);
+            // Добавляем настройку давления через моли
+            // P*V = n*R*T => n = (P*V)/(R*T)
+            // При P=500, V=2500, R=8.314, T возьмем среднее ~260K
+            // n = (500 * 2500) / (8.314 * 260) ≈ 578 моль
+            mixture.SetMoles(Gas.Water, 578f);
+            mixture.Temperature = 260f; // -13°C, среднее между -26 и 0
             return mixture;
         }
     }
@@ -31,7 +37,7 @@ namespace Content.Shared.Atmos
         // ИСПРАВЛЕНО: Теперь использует extension метод из статического класса
         public static GasMixture SpaceWater => new GasMixture(Atmospherics.CellVolume)
         {
-            Temperature = Atmospherics.TCMB,
+            Temperature = Atmospherics.T20C, // Временно, потом скорректируем
             Immutable = true
         }.WithWater();
 
@@ -182,6 +188,9 @@ namespace Content.Shared.Atmos
             return RemoveRatio(amount / TotalMoles);
         }
 
+        // Content.Shared/Atmos/GasMixture.cs
+        // Найти метод RemoveRatio и заменить его
+
         public GasMixture RemoveRatio(float ratio)
         {
             switch (ratio)
@@ -195,25 +204,30 @@ namespace Content.Shared.Atmos
 
             var removed = new GasMixture(Volume) { Temperature = Temperature };
 
-            // -- ДОБАВЛЯЕМ ЗАЩИТУ ВОДЫ --
             // Сохраняем воду из оригинальной смеси
             var originalWater = Moles[(int)Gas.Water];
-            // -------------------------
+            var originalLiquidWater = Moles[(int)Gas.LiquidWater];
 
             Moles.CopyTo(removed.Moles.AsSpan());
             NumericsHelpers.Multiply(removed.Moles, ratio);
             if (!Immutable)
                 NumericsHelpers.Sub(Moles, removed.Moles);
 
-            // -- ВОССТАНАВЛИВАЕМ ВОДУ --
-            // Возвращаем воду обратно в исходную смесь
-            if (!Immutable && originalWater > 0)
+            // Восстанавливаем воду в исходной смеси
+            if (!Immutable)
             {
-                Moles[(int)Gas.Water] = originalWater;
-                // Удаляем воду из removed, чтобы она не ушла в космос
-                removed.Moles[(int)Gas.Water] = 0;
+                if (originalWater > 0)
+                {
+                    Moles[(int)Gas.Water] = originalWater;
+                    removed.Moles[(int)Gas.Water] = 0;
+                }
+
+                if (originalLiquidWater > 0)
+                {
+                    Moles[(int)Gas.LiquidWater] = originalLiquidWater;
+                    removed.Moles[(int)Gas.LiquidWater] = 0;
+                }
             }
-            // -------------------------
 
             for (var i = 0; i < Moles.Length; i++)
             {

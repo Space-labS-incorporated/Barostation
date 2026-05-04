@@ -30,9 +30,8 @@ namespace Content.Server.Atmos.EntitySystems
 
         private int _currentRunAtmosphereIndex;
         private bool _simulationPaused;
-
         // Content.Server/Atmos/EntitySystems/AtmosphereSystem.Processing.cs
-        // Найдите метод GetOrNewTile (примерно в начале файла)
+        // Найти метод GetOrNewTile и обновить логику создания водных тайлов
 
         private TileAtmosphere GetOrNewTile(EntityUid owner, GridAtmosphereComponent atmosphere, Vector2i index, bool invalidateNew = true)
         {
@@ -46,14 +45,16 @@ namespace Content.Server.Atmos.EntitySystems
             tile.GridIndex = owner;
             tile.GridIndices = index;
 
-            // -- ЭТОТ БЛОК УЖЕ ЕСТЬ, НО МОЖНО УПРОСТИТЬ --
-            // Если это космический тайл, создаем его с иммутабельной водой
+            // --- УЛУЧШЕННАЯ ЛОГИКА ДЛЯ ВОДЫ ---
+            // Если это космический тайл, создаём его с водой
+            // Проверяем, не является ли он частью карты (MapAtmosphere)
             if (tile.Space && !tile.MapAtmosphere)
             {
-                // Вместо создания новой смеси, используем готовую SpaceWater
+                // Используем готовую константу SpaceWater
                 tile.Air = GasMixture.SpaceWater;
+                tile.Space = false; // Важно: помечаем как НЕ космос, чтобы вода не исчезала
             }
-            // ------------------------
+            // --------------------------------
 
             return tile;
         }

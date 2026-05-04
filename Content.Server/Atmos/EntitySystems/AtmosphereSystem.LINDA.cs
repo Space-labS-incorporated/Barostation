@@ -214,13 +214,18 @@ namespace Content.Server.Atmos.EntitySystems
         /// Hilarious, I know.</para>
         public float Share(TileAtmosphere tileReceiver, TileAtmosphere tileSharer, int atmosAdjacentTurfs)
         {
+
             // TODO ATMOS: Method needs to timestep over deltaTime instead of per cycle
             // TODO ATMOS: Method needs to account for adjacent turfs in the situation where air is moving from receiver to sharer.
             // See https://github.com/tgstation/tgstation/pull/63785
             if (tileReceiver.Air is not { } receiver || tileSharer.Air is not { } sharer ||
                 tileReceiver.AirArchived == null || tileSharer.AirArchived == null)
                 return 0f;
+            if (tileReceiver.Air.Immutable && tileReceiver.Air.GetMoles(Gas.Water) > 0)
+                return 0f;
 
+            if (tileSharer.Air.Immutable && tileSharer.Air.GetMoles(Gas.Water) > 0)
+                return 0f;
             var temperatureDelta = tileReceiver.AirArchived.Temperature - tileSharer.AirArchived.Temperature;
             var absTemperatureDelta = Math.Abs(temperatureDelta);
             var oldHeatCapacity = 0f;
