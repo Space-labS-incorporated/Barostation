@@ -64,6 +64,7 @@ public sealed partial class AtmosphereSystem : SharedAtmosphereSystem
         InitializeCVars();
         InitializeGridAtmosphere();
         InitializeMap();
+        InitializeWaterMaintenance(); // <-- ДОБАВИТЬ
 
         _atmosQuery = GetEntityQuery<GridAtmosphereComponent>();
         _mapAtmosQuery = GetEntityQuery<MapAtmosphereComponent>();
@@ -103,6 +104,7 @@ public sealed partial class AtmosphereSystem : SharedAtmosphereSystem
 
         UpdateProcessing(frameTime);
         UpdateHighPressure(frameTime);
+        UpdateWaterMaintenance(frameTime); // <-- ДОБАВИТЬ
 
         _exposedTimer += frameTime;
 

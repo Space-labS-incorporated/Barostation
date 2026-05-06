@@ -1,0 +1,12 @@
+- type: entity
+  id: CrateEngineeringNuclearReactor
+  parent: CrateEngineering
+  name: nuclear reactor crate
+  description: Contains a ready-to-install nuclear reactor and 4 uranium rods.
+  components:
+  - type: StorageFill
+    contents:
+      - id: NuclearReactor
+        amount: 1
+      - id: UraniumRod
+        amount: 4

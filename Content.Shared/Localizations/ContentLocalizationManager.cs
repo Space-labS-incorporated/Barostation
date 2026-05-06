@@ -10,8 +10,8 @@ namespace Content.Shared.Localizations
         [Dependency] private readonly ILocalizationManager _loc = default!;
 
         // If you want to change your codebase's language, do it here.
-        private const string Culture = "ru-RU"; // Barostation, all ru-locale files taken from https://github.com/space-syndicate/space-station-14/tree/master/Resources/Locale/ru-RU
-        private const string FallbackCulture = "en-US"; // Barostation-changes: Culture > FallbackCulture
+        private const string Culture = "en-US"; // Corvax-Localization
+        private const string FallbackCulture = "ru-RU"; // Corvax-Localization
 
 
         /// <summary>
@@ -28,12 +28,12 @@ namespace Content.Shared.Localizations
         public void Initialize()
         {
             var culture = new CultureInfo(Culture);
-            var fallbackCulture = new CultureInfo(FallbackCulture); // Barostation
+            var fallbackCulture = new CultureInfo(FallbackCulture); // Corvax-Localization
 
             _loc.LoadCulture(culture);
-            _loc.LoadCulture(fallbackCulture); // Barostation
-            _loc.SetFallbackCluture(fallbackCulture); // Barostation
-            _loc.AddFunction(culture, "MANY", FormatMany); // Barostation
+            _loc.LoadCulture(fallbackCulture); // Corvax-Localization
+            _loc.SetFallbackCluture(fallbackCulture); // Corvax-Localization
+            _loc.AddFunction(culture, "MANY", FormatMany); // Corvax-Localization: To prevent problems in auto-generated locale files
             _loc.AddFunction(culture, "PRESSURE", FormatPressure);
             _loc.AddFunction(culture, "POWERWATTS", FormatPowerWatts);
             _loc.AddFunction(culture, "POWERJOULES", FormatPowerJoules);
@@ -128,6 +128,23 @@ namespace Content.Shared.Localizations
             };
         }
 
+        // CorvaxGoob-Start
+        /// <summary>
+        /// Formats a list with a localized conjunction (RU e.g., "and" -> "и").
+        /// </summary>
+        public static string FormatListLocalized(List<string> list, string conjunctionLocKey)
+        {
+            var conjunction = Loc.GetString(conjunctionLocKey);
+            return list.Count switch
+            {
+                <= 0 => string.Empty,
+                1 => list[0],
+                2 => $"{list[0]} {conjunction} {list[1]}",
+                _ => $"{string.Join(", ", list.GetRange(0, list.Count - 1))}, {conjunction} {list[^1]}"
+            };
+        }
+        // CorvaxGoob-End
+
         /// <summary>
         /// Formats a list as per english grammar rules, but uses or instead of and.
         /// </summary>
@@ -138,7 +155,7 @@ namespace Content.Shared.Localizations
                 <= 0 => string.Empty,
                 1 => list[0],
                 2 => $"{list[0]} or {list[1]}",
-                _ => $"{string.Join(" or ", list)}" // Barostation-changes: _ => $"{string.Join(", ", list.GetRange(0, list.Count - 1))}, or {list[^1]}" > _ => $"{string.Join(" or ", list)}"
+                _ => $"{string.Join(" or ", list)}"
             };
         }
 

@@ -131,8 +131,6 @@ public sealed partial class AtmosphereSystem
 
                 if (invalidate)
                 {
-                    //var ev = new InvalidateTileMethodEvent(gridUid, indices);
-                    //GridInvalidateTile(gridUid, grid, ref ev);
                     AddActiveTile(grid, tile);
                 }
 
@@ -224,15 +222,9 @@ public sealed partial class AtmosphereSystem
             tile.MonstermosInfo.CurrentTransferDirection = AtmosDirection.Invalid;
     }
 
-    private (GasMixture Air, bool IsSpace) GetDefaultMapAtmosphere(MapAtmosphereComponent? map)
-    {
-        if (map == null)
-            return (GasMixture.SpaceGas, true);
-
-        var air = map.Mixture;
-        DebugTools.Assert(air.Immutable);
-        return (air, map.Space);
-    }
+    // УДАЛИТЕ ЭТОТ МЕТОД ОТСЮДА - он уже есть в AtmosphereSystem.Map.cs
+    // private (GasMixture Air, bool IsSpace) GetDefaultMapAtmosphere(MapAtmosphereComponent? map) { ... }
+    // private bool HasWaterOnly(GasMixture mixture) { ... }
 
     private void GridHotspotExtinguish(EntityUid uid, GridAtmosphereComponent component,
         ref HotspotExtinguishMethodEvent args)
@@ -246,8 +238,6 @@ public sealed partial class AtmosphereSystem
         tile.Hotspot = new Hotspot();
         args.Handled = true;
 
-        //var ev = new InvalidateTileMethodEvent(uid, args.Tile);
-        //GridInvalidateTile(uid, component, ref ev);
         AddActiveTile(component, tile);
     }
 
@@ -290,11 +280,6 @@ public sealed partial class AtmosphereSystem
                 continue;
 
             totalTemperature += adj.Temperature;
-
-            // TODO ATMOS. Why is this removing and then re-adding air to the neighbouring tiles?
-            // Is it some rounding issue to do with Atmospherics.GasMinMoles? because otherwise this is just unnecessary.
-            // if we get rid of this, then this could also just add moles and then multiply by ratio at the end, rather
-            // than having to iterate over adjacent tiles twice.
 
             // Remove a bit of gas from the adjacent ratio...
             var mix = adj.Air.RemoveRatio(ratio);

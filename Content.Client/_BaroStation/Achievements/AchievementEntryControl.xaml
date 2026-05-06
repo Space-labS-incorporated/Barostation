@@ -1,0 +1,11 @@
+<BoxContainer xmlns="https://spacestation14.io"
+              Orientation="Horizontal"
+              SeparationOverride="10"
+              Margin="5"
+              MinHeight="60"
+              StyleClasses="BackgroundPanel">
+    <BoxContainer Orientation="Vertical" HorizontalExpand="True">
+        <Label Name="TitleLabel" StyleClasses="LabelHeading" ClipText="True"/>
+        <Label Name="DescriptionLabel" StyleClasses="LabelSubText" ClipText="True"/>
+    </BoxContainer>
+</BoxContainer>

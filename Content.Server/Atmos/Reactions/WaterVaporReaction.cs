@@ -21,6 +21,12 @@ namespace Content.Server.Atmos.Reactions
 
         public ReactionResult React(GasMixture mixture, IGasMixtureHolder? holder, AtmosphereSystem atmosphereSystem, float heatScale)
         {
+            // -- ДОБАВЛЯЕМ ПРОВЕРКУ НА ВОДУ --
+            // Если есть вода, не реагируем (предотвращаем испарение воды в пар)
+            if (mixture.GetMoles(Gas.Water) > 0.1f)
+                return ReactionResult.NoReaction;
+            // ---------------------------------
+
             // If any of the prototypes is invalid, we do nothing.
             if (string.IsNullOrEmpty(Reagent))
                 return ReactionResult.NoReaction;

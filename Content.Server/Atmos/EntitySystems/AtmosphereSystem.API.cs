@@ -635,6 +635,29 @@ public partial class AtmosphereSystem
         return ev.Result;
     }
 
+    public void SetTileMixtureInternal(EntityUid gridUid, Vector2i indices, GasMixture mixture)
+    {
+        if (!_atmosQuery.TryGetComponent(gridUid, out var gridAtmos))
+            return;
+
+        if (!gridAtmos.Tiles.TryGetValue(indices, out var tile))
+        {
+            // Создаём тайл, если его нет
+            // Используем правильный конструктор TileAtmosphere
+            tile = new TileAtmosphere(gridUid, indices);
+            gridAtmos.Tiles[indices] = tile;
+        }
+
+        // Устанавливаем смесь
+        tile.Air = mixture;
+
+        // Обновляем состояние тайла
+        tile.Space = false;
+        tile.MapAtmosphere = false;
+
+        // Инвалидируем для обновления
+        gridAtmos.InvalidatedCoords.Add(indices);
+    }
     /// <summary>
     /// Adds a <see cref="PipeNet"/> to a grid.
     /// </summary>

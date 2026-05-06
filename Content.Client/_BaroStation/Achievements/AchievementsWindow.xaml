@@ -1,0 +1,24 @@
+<controls:FancyWindow xmlns="https://spacestation14.io"
+                      xmlns:controls="clr-namespace:Content.Client.UserInterface.Controls"
+                      Title="{Loc 'achievements-window-title'}"
+                      MinSize="600 500"
+                      SetSize="650 550">
+    <BoxContainer Orientation="Vertical" Margin="10">
+        <BoxContainer Orientation="Horizontal" Margin="0 0 0 10">
+            <Label Name="StatsLabel" Access="Public" Text="" StyleClasses="LabelKeyText"/>
+        </BoxContainer>
+        <ScrollContainer VerticalExpand="True">
+            <BoxContainer Orientation="Vertical" Margin="5">
+                <Label Text="ACHIEVED" StyleClasses="LabelHeading" Margin="5 5 5 5"
+                       Visible="False" Name="EarnedHeader"/>
+                <BoxContainer Name="EarnedList" Access="Public" Orientation="Vertical" SeparationOverride="5"/>
+
+                <Control MinHeight="20" Name="Separator" Visible="False"/>
+
+                <Label Text="LOCKED" StyleClasses="LabelHeading" Margin="5 5 5 5"
+                       Visible="False" Name="LockedHeader"/>
+                <BoxContainer Name="LockedList" Access="Public" Orientation="Vertical" SeparationOverride="5"/>
+            </BoxContainer>
+        </ScrollContainer>
+    </BoxContainer>
+</controls:FancyWindow>

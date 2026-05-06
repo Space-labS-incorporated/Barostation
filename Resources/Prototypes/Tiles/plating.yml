@@ -1,4 +1,4 @@
-﻿- type: tile
+- type: tile
   id: BasePlating
   abstract: true
   friction: 1.5
@@ -91,14 +91,13 @@
   id: Lattice
   name: tiles-lattice
   sprite: /Textures/Tiles/lattice.png
-  baseTurf: Space
   isSubfloor: true
   deconstructTools: [ Cutting ]
   weather: true
   footstepSounds:
     collection: FootstepCatwalk
   friction: 1.5
-  isSpace: true
+  isSpace: false
   itemDrop: PartRodMetal1
   heatCapacity: 10000
   mass: 200

@@ -308,7 +308,13 @@ namespace Content.Server.Database
         Task<bool> CleanIPIntelCache(TimeSpan range);
 
         #endregion
+        #region Achievements
 
+        Task<List<string>> GetPlayerAchievementsAsync(NetUserId userId);
+        Task AddPlayerAchievementAsync(NetUserId userId, string achievementId);
+        Task RemoveAllPlayerAchievementsAsync(NetUserId userId);
+
+        #endregion
         #region DB Notifications
 
         void SubscribeToNotifications(Action<DatabaseNotification> handler);
@@ -843,7 +849,27 @@ namespace Content.Server.Database
 
             return RunDbCommand(() => _db.AddAdminMessage(note));
         }
+        #region Achievements
 
+        public Task<List<string>> GetPlayerAchievementsAsync(NetUserId userId)
+        {
+            DbReadOpsMetric.Inc();
+            return RunDbCommand(() => _db.GetPlayerAchievementsAsync(userId));
+        }
+
+        public Task AddPlayerAchievementAsync(NetUserId userId, string achievementId)
+        {
+            DbWriteOpsMetric.Inc();
+            return RunDbCommand(() => _db.AddPlayerAchievementAsync(userId, achievementId));
+        }
+
+        public Task RemoveAllPlayerAchievementsAsync(NetUserId userId)
+        {
+            DbWriteOpsMetric.Inc();
+            return RunDbCommand(() => _db.RemoveAllPlayerAchievementsAsync(userId));
+        }
+
+        #endregion
         public Task<AdminNoteRecord?> GetAdminNote(int id)
         {
             DbReadOpsMetric.Inc();

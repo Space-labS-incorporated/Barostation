@@ -1,0 +1,93 @@
+- type: entity
+  id: NuclearReactorConsole
+  parent: BaseComputer
+  name: nuclear reactor console
+  description: "Remote control console for a nuclear reactor. Requires linking to a reactor with a multitool."
+  components:
+  - type: Sprite
+    sprite: Structures/Machines/computers.rsi
+    layers:
+    - map: ["computerLayerBody"]
+      state: computer
+    - map: ["computerLayerKeyboard"]
+      state: generic_keyboard
+    - map: ["computerLayerScreen"]
+      state: power_monitor
+    - map: ["computerLayerKeys"]
+      state: power_key
+    - map: ["enum.WiresVisualLayers.MaintenancePanel"]
+      state: generic_panel_open
+  - type: Computer
+    board: NuclearReactorConsoleCircuitboard
+  - type: DeviceLinkSink
+    ports:
+      - NuclearReactorLink
+  - type: ActivatableUI
+    key: enum.NuclearReactorConsoleUiKey.Key
+  - type: ActivatableUIRequiresPower
+  - type: UserInterface
+    interfaces:
+      enum.NuclearReactorConsoleUiKey.Key:
+        type: NuclearReactorConsoleBoundUserInterface
+      enum.WiresUiKey.Key:
+        type: WiresBoundUserInterface
+  - type: NuclearReactorConsole
+  - type: ApcPowerReceiver
+    powerLoad: 200
+  - type: Anchorable
+  - type: Pullable
+  - type: Transform
+    anchored: true
+    noRot: true
+  - type: Physics
+    bodyType: Static
+  - type: Fixtures
+    fixtures:
+      fix1:
+        shape:
+          !type:PhysShapeAabb
+          bounds: "-0.3,-0.3,0.3,0.3"
+        density: 100
+        mask:
+        - MachineMask
+        layer:
+        - Opaque
+  - type: Damageable
+    damageContainer: StructuralInorganic
+    damageModifierSet: StructuralMetallicStrong
+  - type: Destructible
+    thresholds:
+    - trigger:
+        !type:DamageTrigger
+        damage: 150
+      behaviors:
+      - !type:DoActsBehavior
+        acts: ["Destruction"]
+      - !type:PlaySoundBehavior
+        sound: /Audio/Effects/metalbreak.ogg
+  - type: Appearance
+  - type: GenericVisualizer
+    visuals:
+      enum.ComputerVisuals.Powered:
+        computerLayerScreen:
+          True: { visible: true, shader: unshaded }
+          False: { visible: false }
+        computerLayerKeys:
+          True: { visible: true, shader: unshaded }
+          False: { visible: true, shader: shaded }
+      enum.WiresVisuals.MaintenancePanelState:
+        enum.WiresVisualLayers.MaintenancePanel:
+          True: { visible: false }
+          False: { visible: true }
+  - type: PointLight
+    radius: 1.5
+    energy: 4.0
+    color: "#c9c042"
+  - type: WiresPanel
+  - type: Wires
+    layoutId: Computer
+  - type: Electrified
+    onHandInteract: false
+    onInteractUsing: false
+    onBump: false
+    requirePower: true
