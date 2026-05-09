@@ -1,0 +1,19 @@
+- type: entity
+  parent: WeaponWandPolymorphBase
+  id: WeaponWandPolymorphPig
+  name: wand of pig polymorph
+  description: Oink! Turns anyone into a cute pig.
+  components:
+  - type: Sprite
+    layers:
+    - state: poly
+      color: '#FFB6C1'
+    - state: poly-effect
+      map: ["effect"]
+      color: '#FFB6C1'
+  - type: Gun
+    soundGunshot: null  # <-- УБИРАЕМ ЗВУК ВЫСТРЕЛА
+  - type: BasicEntityAmmoProvider
+    proto: ProjectilePolyboltPig
+    capacity: 10
+    count: 10

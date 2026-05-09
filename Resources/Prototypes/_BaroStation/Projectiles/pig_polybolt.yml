@@ -1,0 +1,17 @@
+- type: entity
+  parent: ProjectilePolyboltBase
+  id: ProjectilePolyboltPig
+  name: pig polybolt
+  description: Oink? OINK!
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: PolymorphOnTrigger
+    polymorph: WeaponPigPolymorph
+  - type: WhitelistTriggerCondition
+    userWhitelist:
+      components:
+      - MobState
+  - type: Sprite
+    layers:
+    - state: spell
+      color: '#FFB6C1'  # Розовый цвет для визуального отличия

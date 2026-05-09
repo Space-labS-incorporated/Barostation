@@ -100,6 +100,8 @@ public sealed partial class AdminVerbSystem
 
     private readonly EntProtoId _actionViewLawsProtoId = "ActionViewLaws";
     private readonly ProtoId<SiliconLawsetPrototype> _crewsimovLawset = "Crewsimov";
+    private readonly ProtoId<PolymorphPrototype> PigSmite = "AdminPigSmite";
+
 
     private readonly EntProtoId _siliconMindRole = "MindRoleSiliconBrain";
     private const string SiliconLawBoundUserInterface = "SiliconLawBoundUserInterface";
@@ -521,6 +523,21 @@ public sealed partial class AdminVerbSystem
             Message = string.Join(": ", breadName, Loc.GetString("admin-smite-become-bread-description"))
         };
         args.Verbs.Add(bread);
+
+        var pigName = Loc.GetString("admin-smite-pigify-name").ToLowerInvariant();
+        Verb pig = new()
+        {
+            Text = pigName,
+            Category = VerbCategory.Smite,
+            Icon = new SpriteSpecifier.Rsi(new("/Textures/Mobs/Animals/pig.rsi"), "pig"),
+            Act = () =>
+            {
+                _polymorphSystem.PolymorphEntity(args.Target, PigSmite);
+            },
+            Impact = LogImpact.Extreme,
+            Message = string.Join(": ", pigName, Loc.GetString("admin-smite-pigify-description"))
+        };
+        args.Verbs.Add(pig);
 
         var mouseName = Loc.GetString("admin-smite-become-mouse-name").ToLowerInvariant();
         Verb mouse = new()
