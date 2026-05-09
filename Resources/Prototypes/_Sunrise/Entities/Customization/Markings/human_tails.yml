@@ -2,7 +2,6 @@
   id: FoxTail
   bodyPart: Tail
   markingCategory: Tail
-  speciesRestriction: [SlimePerson, Dwarf, Vox, Arachnid, Diona]
   sprites:
   - sprite: _Sunrise/Mobs/Customization/Vulpkanin/tail_markings.rsi
     state: vulp_wag
@@ -13,7 +12,6 @@
   id: BigFoxTail
   bodyPart: Tail
   markingCategory: Tail
-  speciesRestriction: [SlimePerson, Dwarf, Vox, Arachnid, Diona]
   coloring:
     default:
       type:
@@ -35,7 +33,6 @@
   id: SharkTail
   bodyPart: Tail
   markingCategory: Tail
-  speciesRestriction: [SlimePerson, Dwarf, Vox, Arachnid, Diona]
   sprites:
   - sprite: _Sunrise/Mobs/Customization/human_tails.rsi
     state: shark_tail
@@ -44,7 +41,6 @@
   id: LizardTail
   bodyPart: Tail
   markingCategory: Tail
-  speciesRestriction: [SlimePerson, Dwarf, Vox, Arachnid, Diona]
   sprites:
   - sprite: _Sunrise/Mobs/Customization/human_tails.rsi
     state: lizard_tail_primary
